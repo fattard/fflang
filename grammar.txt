@@ -1,0 +1,61 @@
+letter ::= [A-Za-z]
+
+digit ::= [0-9]
+
+identifier ::= letter (letter | '_' | digit)*
+             | '_' (letter | '_' | digit)+
+
+integer_literal ::= digit+
+
+type_name ::= identifier
+
+compilation_unit ::= using_directive* function_declaration* EOF
+
+using_directive ::= 'using' function_header ';'
+
+function_header ::= 'func' identifier '(' function_parameter_list? ')' '->' type_name
+
+function_declaration ::= function_header function_body
+
+function_parameter_list ::= function_parameter (',' function_parameter)*
+
+function_parameter ::= identifier ':' type_name
+
+function_body ::= '{' local_variable_declaration* statement* return_statement '}'
+
+local_variable_declaration ::= 'var' identifier ':' type_name ';'
+
+statement ::= set_statement
+            | if_statement
+            | label_statement
+            | goto_statement
+            | discard_statement
+
+label_statement ::= identifier ':'
+
+goto_statement ::= 'goto' identifier ';'
+
+set_statement ::= 'set' identifier '=' expression ';'
+
+if_statement ::= 'if' '(' boolean_expression ')' '{' statement* '}' else_statement?
+
+else_statement ::= 'else' '{' statement* '}'
+
+discard_statement ::= '_' '=' function_invocation ';'
+
+return_statement ::= 'return' expression ';'
+
+expression ::= primary_expression
+
+primary_expression ::= integer_literal
+                     | identifier function_invocation_tail?
+
+boolean_expression ::= '__bool_check' '(' expression ')'
+
+function_invocation ::= identifier function_invocation_tail
+
+function_invocation_tail ::= '(' function_argument_list? ')'
+
+function_argument_list ::= function_argument (',' function_argument)*
+
+function_argument ::= expression
