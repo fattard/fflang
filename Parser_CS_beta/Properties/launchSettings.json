@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Parser_CS": {
+      "commandName": "Project",
+      "commandLineArgs": "snippet.txt",
+      "workingDirectory": "..\\"
+    }
+  }
+}
