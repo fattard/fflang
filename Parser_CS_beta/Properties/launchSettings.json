@@ -2,8 +2,8 @@
   "profiles": {
     "Parser_CS": {
       "commandName": "Project",
-      "commandLineArgs": "snippet.txt",
-      "workingDirectory": "..\\"
+      "commandLineArgs": "snippet_error_tests.txt",
+      "workingDirectory": ".\\"
     }
   }
 }

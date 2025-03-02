@@ -1,0 +1,71 @@
+return 0; // Misplaced return out of a function
+
+using func readMemory(addr: Int) -> Int         // Mssing semicolon
+using func writeMemory(addr: Int, data: Int)    // Missing return type
+
+func main() -> Int
+{
+    var 1a: Int;                // Invalid identifier start (digit)
+    var a: Int;
+    var b: Int;
+    
+    let a = 5                   // Missing semicolon
+
+LOOP:
+    LOOP: let a = 15;           // Duplicate label
+
+    goto UNDEFINED;             // Goto to undefined label
+    
+    let c = 10;                 // Undeclared identifier
+
+    let c = add a, b;           // Function invocation with missing parentheses
+
+    if (b)                      // If without __bool_check
+    {
+        let c = 11;
+    }
+    
+    _ = writeMemory(1, c);
+
+    else                        // Else without matching if
+    {
+        writeMemory(1, c);      // Missing explicit discard statement
+    }
+
+    return 0;                   // Return statement not last statement (invalid here)
+
+    { var x: Int; 123; }        // Unexpected token
+
+    { var y: Int; return 0;     // Unmatched opening brace
+
+    let d = readMemory();       // Invalid function invoke (wrong number of arguments)
+
+    func nestedFunc(a: Int) -> Int   // Unexpected func declaration
+    {
+        return 0;
+    }
+
+    let e = sub(b, 1);
+    
+    if (__bool_check(e))
+    {
+LOOP_INF:
+        goto LOOP_INF;          // Circular goto (infinite loop warning, optional)
+    }
+						
+								// Missing return statement
+						
+}
+
+func test(a: Int, b: Int, c: int) -> Int  // Invalid type name 'int'
+{
+    return 1;
+    return 2;                   // Multiple return statements
+}
+
+func emptyFunc() -> Int {}      // Empty function body (missing return)
+
+func test2(t) -> Int            // Missing parameter type
+{
+    return 0;
+}
