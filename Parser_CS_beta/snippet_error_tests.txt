@@ -1,5 +1,6 @@
 return 0; // Misplaced return out of a function
 
+using func add(a: Int, b: Int) -> Int;
 using func readMemory(addr: Int) -> Int         // Mssing semicolon
 using func writeMemory(addr: Int, data: Int)    // Missing return type
 
@@ -8,23 +9,30 @@ func main() -> Int
     var 1a: Int;                // Invalid identifier start (digit)
     var a: Int;
     var b: Int;
-    
-    let a = 5                   // Missing semicolon
+    var c: Int;
+
+    set a = 5                   // Missing semicolon
+
+    set b = -5;                 // Invalid symbol -
+
+    set a = 9999999999;         // Integer overflow
+
 
 LOOP:
-    LOOP: let a = 15;           // Duplicate label
+    LOOP: set a = 15;           // Duplicate label
 
     goto UNDEFINED;             // Goto to undefined label
-    
-    let c = 10;                 // Undeclared identifier
 
-    let c = add a, b;           // Function invocation with missing parentheses
+    set e = 10;                 // Undeclared identifier
+
+    set c = add a, b;           // Function invocation with missing parentheses
 
     if (b)                      // If without __bool_check
     {
-        let c = 11;
+    INNER_LABEL:
+        set c = 11;
     }
-    
+
     _ = writeMemory(1, c);
 
     else                        // Else without matching if
@@ -36,25 +44,29 @@ LOOP:
 
     { var x: Int; 123; }        // Unexpected token
 
-    { var y: Int; return 0;     // Unmatched opening brace
+    var y: Int;                 // Invalid statement (declaring var after var block)
 
-    let d = readMemory();       // Invalid function invoke (wrong number of arguments)
+    set c = readMemory();       // Invalid function invoke (wrong number of arguments)
 
     func nestedFunc(a: Int) -> Int   // Unexpected func declaration
     {
         return 0;
     }
 
-    let e = sub(b, 1);
-    
-    if (__bool_check(e))
+    set b = sub(b, 1);          // Undeclared function sub
+
+    set a = add(c, 2);          // Forward declared but never defined
+
+    goto INNER_LABEL;           // Invalid goto going to inner scope
+
+    if (__bool_check(b))
     {
 LOOP_INF:
         goto LOOP_INF;          // Circular goto (infinite loop warning, optional)
     }
-						
-								// Missing return statement
-						
+
+                                // Missing return statement
+
 }
 
 func test(a: Int, b: Int, c: int) -> Int  // Invalid type name 'int'
@@ -69,3 +81,10 @@ func test2(t) -> Int            // Missing parameter type
 {
     return 0;
 }
+
+func writeMemory(addr: Int, data: Int, extra: Int) -> Int  // Definion with a different number of parameter from declaration
+{
+    return 0;
+}
+
+func readMemory(addr: Int) -> Int { return 1; }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 enum TokenType
@@ -47,6 +48,39 @@ class Token
     }
 }
 
+enum SymbolType
+{
+    FUNCTION,
+    ARGUMENT_VARIABLE,
+    LOCAL_VARIABLE,
+    LABEL,
+    TYPE_NAME,
+
+    UNDEFINED = 100
+}
+
+class Symbol
+{
+    public string identifier;
+    public SymbolType symbolType;
+    public int definitionLine;
+    public int scopeDepth;
+    public int paramCount;
+    public bool definitionFound;
+    public bool wasReferenced;
+
+    public Symbol(string identifier, SymbolType symbolType, int scopeDepth, int definitionLine)
+    {
+        this.identifier = identifier;
+        this.symbolType = symbolType;
+        this.scopeDepth = scopeDepth;
+        this.paramCount = 0;
+        this.definitionFound = false;
+        this.wasReferenced = false;
+        this.definitionLine = definitionLine;
+    }
+}
+
 class Parser
 {
     private Token m_curToken;
@@ -54,6 +88,14 @@ class Parser
     private int m_pos;
     private int m_line;
     private int m_lastValidLine;
+    private int m_curScopeDepth;
+    private bool m_inFunctionScope;
+    private int m_paramCount;
+
+    private List<Symbol> m_functionsTbl;
+    private List<Symbol> m_functionScopeTbl;
+    private List<Symbol> m_unresolvedGotoTbl;
+    private List<Symbol> m_typeNamesTbl;
 
     public Parser(string srcCodeTxt)
     {
@@ -62,6 +104,31 @@ class Parser
         m_pos = 0;
         m_line = 1;
         m_lastValidLine = 1;
+        m_curScopeDepth = 0;
+        m_inFunctionScope = false;
+        m_paramCount = 0;
+
+        m_functionsTbl = new List<Symbol>();
+        m_functionScopeTbl = new List<Symbol>();
+        m_unresolvedGotoTbl = new List<Symbol>();
+        m_typeNamesTbl = new List<Symbol>();
+
+        InsertFunctionSymbol("__builtin_int_add");
+        InsertFunctionSymbol("__builtin_int_nand");
+        InsertFunctionSymbol("__builtin_int_mem_read");
+        InsertFunctionSymbol("__builtin_int_mem_write");
+
+        MarkFunctionSymbolDefinitionFound("__builtin_int_add", 0);
+        MarkFunctionSymbolDefinitionFound("__builtin_int_nand", 0);
+        MarkFunctionSymbolDefinitionFound("__builtin_int_mem_read", 0);
+        MarkFunctionSymbolDefinitionFound("__builtin_int_mem_write", 0);
+
+        UpdateFunctionSymbolParamCount("__builtin_int_add", 2);
+        UpdateFunctionSymbolParamCount("__builtin_int_nand", 2);
+        UpdateFunctionSymbolParamCount("__builtin_int_mem_read", 1);
+        UpdateFunctionSymbolParamCount("__builtin_int_mem_write", 2);
+
+        InsertTypeNameSymbol("Int", 0);
     }
 
     public void Parse()
@@ -89,13 +156,21 @@ class Parser
             }
         }
 
+        m_inFunctionScope = true;
+
         while (MatchTokenType(TokenType.FUNC))
         {
             ConsumeToken();
+            ResetFunctionScope();
             if (!ParseFunctionDeclaration())
             {
                 return false;
             }
+        }
+
+        if (AnyReferencedFunctionNotDefined())
+        {
+            return false;
         }
 
         if (!MatchTokenType(TokenType.EOF_TOKEN))
@@ -108,6 +183,12 @@ class Parser
             {
                 PrintError($"Unexpected token at end of file. Found '{m_curToken.value}'");
             }
+            return false;
+        }
+
+        if (!IsMainFunctionValid())
+        {
+            PrintError($"Entry point is missing. Please provide a 'main()' function implementation.");
             return false;
         }
 
@@ -150,6 +231,11 @@ class Parser
             return false;
         }
 
+        if (AnyUnresolvedGoto())
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -160,6 +246,24 @@ class Parser
             PrintError($"Expected valid function name after 'func' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+
+        bool wasForwardDeclared = false;
+        if (!m_inFunctionScope)
+        {
+            InsertFunctionSymbol(m_curToken.value);
+        }
+        else
+        {
+            wasForwardDeclared = !InsertFunctionSymbol(m_curToken.value);
+            if (IsFunctionSymbolDefinitionFound(m_curToken.value))
+            {
+                return false;
+            }
+            MarkFunctionSymbolDefinitionFound(m_curToken.value, m_lastValidLine);
+        }
+        var funcName = m_curToken.value;
+        var defLine = m_lastValidLine;
+        m_paramCount = 0;
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.L_PAREN))
@@ -196,7 +300,26 @@ class Parser
             PrintError($"Expected type after '->' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+        if (!ContainsTypeNameSymbol(m_curToken.value))
+        {
+            PrintError($"Undefined type name symbol at line {m_lastValidLine}. Found '{m_curToken.value}'");
+            if (m_curToken.value == "int")
+            {
+                PrintError($"Did you mean 'Int'?");
+            }
+            return false;
+        }
         ConsumeToken();
+
+        if (m_inFunctionScope && wasForwardDeclared)
+        {
+            if (!MatchFunctionSymbolParamCount(funcName, m_paramCount))
+            {
+                PrintError($"Definition of function '{funcName}' at line {defLine} with different number of paramaters from declaration.");
+                return false;
+            }
+        }
+        UpdateFunctionSymbolParamCount(funcName, m_paramCount);
 
         return true;
     }
@@ -207,6 +330,7 @@ class Parser
         {
             return false;
         }
+        m_paramCount++;
 
         while (MatchTokenType(TokenType.COMMA))
         {
@@ -215,6 +339,7 @@ class Parser
             {
                 return false;
             }
+            m_paramCount++;
         }
 
         return true;
@@ -226,6 +351,15 @@ class Parser
         {
             PrintError($"Expected identifier in parameters at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
+        }
+
+        if (m_inFunctionScope)
+        {
+            if (!InsertFunctionScopeSymbol(m_curToken.value, SymbolType.ARGUMENT_VARIABLE, m_paramCount, m_lastValidLine))
+            {
+                return false;
+            }
+            MarkFunctionScopeSymbolDefinitionFound(m_curToken.value, m_lastValidLine);
         }
         ConsumeToken();
 
@@ -239,6 +373,15 @@ class Parser
         if (!MatchTokenType(TokenType.IDENTIFIER))
         {
             PrintError($"Expected type after ':' at line {m_lastValidLine}. Found '{m_curToken.value}'");
+            return false;
+        }
+        if (!ContainsTypeNameSymbol(m_curToken.value))
+        {
+            PrintError($"Undefined type name symbol at line {m_lastValidLine}. Found '{m_curToken.value}'");
+            if (m_curToken.value == "int")
+            {
+                PrintError($"Did you mean 'Int'?");
+            }
             return false;
         }
         ConsumeToken();
@@ -255,6 +398,7 @@ class Parser
         }
         ConsumeToken();
 
+        m_paramCount = 0;
         while (MatchTokenType(TokenType.VAR))
         {
             ConsumeToken();
@@ -262,6 +406,7 @@ class Parser
             {
                 return false;
             }
+            m_paramCount++;
         }
 
         while (!MatchTokenType(TokenType.RETURN))
@@ -297,6 +442,15 @@ class Parser
         {
             PrintError($"Expected identifier after 'var' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
+        }
+
+        if (m_inFunctionScope)
+        {
+            if (!InsertFunctionScopeSymbol(m_curToken.value, SymbolType.LOCAL_VARIABLE, m_paramCount, m_lastValidLine))
+            {
+                return false;
+            }
+            MarkFunctionScopeSymbolDefinitionFound(m_curToken.value, m_lastValidLine);
         }
         ConsumeToken();
 
@@ -360,6 +514,7 @@ class Parser
         }
         else if (MatchTokenType(TokenType.IDENTIFIER))
         {
+            var curIdentifier = m_curToken.value;
             ConsumeToken();
             if (MatchTokenType(TokenType.COLON))
             {
@@ -368,6 +523,28 @@ class Parser
                 {
                     return false;
                 }
+
+                if (ContainsFunctionScopeSymbol(curIdentifier))
+                {
+                    if (!MatchFunctionScopeSymbolType(curIdentifier, SymbolType.LABEL))
+                    {
+                        PrintError($"Identifier '{curIdentifier}' at line {m_lastValidLine} is already defined");
+                        return false;
+                    }
+                    if (IsFunctionScopeSymbolDefinitionFound(curIdentifier))
+                    {
+                        var sym = GetFunctionScopeSymbol(curIdentifier);
+                        PrintError($"Duplicate definition for '{curIdentifier}' at line {m_lastValidLine}");
+                        PrintError($"First definition: line {sym.definitionLine}");
+                        return false;
+                    }
+                    UpdateFunctionScopeSymbolScopeDepth(curIdentifier, m_curScopeDepth);
+                }
+                else
+                {
+                    InsertFunctionScopeSymbol(curIdentifier, SymbolType.LABEL, m_curScopeDepth, m_lastValidLine);
+                }
+                MarkFunctionScopeSymbolDefinitionFound(curIdentifier, m_lastValidLine);
             }
             else
             {
@@ -396,6 +573,21 @@ class Parser
             PrintError($"Expected identifier after 'goto' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+
+        if (!ContainsFunctionScopeSymbol(m_curToken.value))
+        {
+            InsertUnresolvedGotoSymbol(m_curToken.value, m_curScopeDepth, m_lastValidLine);
+        }
+        else if (!MatchFunctionScopeSymbolType(m_curToken.value, SymbolType.LABEL))
+        {
+            PrintError($"Identifier '{m_curToken.value}' at line {m_lastValidLine} is already defined");
+            return false;
+        }
+        if (GetFunctionScopeSymbol(m_curToken.value)?.scopeDepth > m_curScopeDepth)
+        {
+            PrintError($"Label '{m_curToken.value}' is not available at current scope at line {m_lastValidLine}.");
+            return false;
+        }
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.SEMICOLON))
@@ -415,6 +607,19 @@ class Parser
             PrintError($"Expected identifier after 'set' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+
+        if (!ContainsFunctionScopeSymbol(m_curToken.value))
+        {
+            PrintError($"Undefined symbol '{m_curToken.value}' at line {m_lastValidLine}");
+            return false;
+        }
+        if (!MatchFunctionScopeSymbolType(m_curToken.value, SymbolType.LOCAL_VARIABLE) &&
+            !MatchFunctionScopeSymbolType(m_curToken.value, SymbolType.ARGUMENT_VARIABLE))
+        {
+            PrintError($"Expected variable symbol after 'set' at line {m_lastValidLine}. Found '{m_curToken.value}'");
+            return false;
+        }
+        var varName = m_curToken.value;
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.EQUALS))
@@ -424,6 +629,7 @@ class Parser
         }
         ConsumeToken();
 
+        m_paramCount = 0;
         if (!ParsePrimaryExpression())
         {
             return false;
@@ -468,6 +674,8 @@ class Parser
         }
         ConsumeToken();
 
+        m_curScopeDepth++;
+
         while (!MatchTokenType(TokenType.R_BRACE))
         {
             if (!ParseStatement())
@@ -482,6 +690,8 @@ class Parser
             return false;
         }
         ConsumeToken();
+
+        m_curScopeDepth--;
 
         if (MatchTokenType(TokenType.ELSE))
         {
@@ -504,6 +714,8 @@ class Parser
         }
         ConsumeToken();
 
+        m_curScopeDepth++;
+
         while (!MatchTokenType(TokenType.R_BRACE))
         {
             if (!ParseStatement())
@@ -519,6 +731,8 @@ class Parser
         }
         ConsumeToken();
 
+        m_curScopeDepth--;
+
         return true;
     }
 
@@ -530,6 +744,8 @@ class Parser
             return false;
         }
         ConsumeToken();
+
+        m_paramCount = 0;
 
         if (!ParseFunctionInvocation())
         {
@@ -555,6 +771,7 @@ class Parser
         }
         ConsumeToken();
 
+        m_paramCount = 0;
         if (!ParsePrimaryExpression())
         {
             return false;
@@ -574,16 +791,45 @@ class Parser
     {
         if (MatchTokenType(TokenType.INTEGER_LITERAL))
         {
+            if (long.Parse(m_curToken.value) > 2147483647)
+            {
+                PrintError($"Integer overflow at line {m_lastValidLine}: '{m_curToken.value}' exceeds max allowed value {2147483647}.");
+                return false;
+            }
             ConsumeToken();
         }
         else if (MatchTokenType(TokenType.IDENTIFIER))
         {
+            var curIdentifier = m_curToken.value;
             ConsumeToken();
             if (MatchTokenType(TokenType.L_PAREN))
             {
+                if (!ContainsFunctionSymbol(curIdentifier))
+                {
+                    PrintError($"Undefined function '{curIdentifier}' at line {m_lastValidLine}.");
+                    return false;
+                }
+                MarkFunctionSymbolAsReferenced(curIdentifier, m_lastValidLine);
                 ConsumeToken();
+                int oldParamCount = m_paramCount;
+                m_paramCount = 0;
                 if (!ParseFunctionInvocationTail())
                 {
+                    return false;
+                }
+
+                if (!MatchFunctionSymbolParamCount(curIdentifier, m_paramCount))
+                {
+                    PrintError($"Invalid number of arguments for function '{curIdentifier}' at line {m_lastValidLine}.");
+                    return false;
+                }
+                m_paramCount = oldParamCount;
+            }
+            else
+            {
+                if (!ContainsFunctionScopeSymbol(curIdentifier))
+                {
+                    PrintError($"Undefined symbol '{curIdentifier}' at line {m_lastValidLine}.");
                     return false;
                 }
             }
@@ -613,6 +859,7 @@ class Parser
         }
         ConsumeToken();
 
+        m_paramCount = 0;
         if (!ParsePrimaryExpression())
         {
             return false;
@@ -635,6 +882,8 @@ class Parser
             PrintError($"Expected identifier after '=' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+        var funcName = m_curToken.value;
+        MarkFunctionSymbolAsReferenced(funcName, m_lastValidLine);
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.L_PAREN))
@@ -644,10 +893,19 @@ class Parser
         }
         ConsumeToken();
 
+        int oldParamCount = m_paramCount;
+        m_paramCount = 0;
         if (!ParseFunctionInvocationTail())
         {
             return false;
         }
+
+        if (!MatchFunctionSymbolParamCount(funcName, m_paramCount))
+        {
+            PrintError($"Invalid number of arguments for function '{funcName}' at line {m_lastValidLine}.");
+            return false;
+        }
+        m_paramCount = oldParamCount;
 
         return true;
     }
@@ -678,6 +936,7 @@ class Parser
         {
             return false;
         }
+        m_paramCount++;
 
         while (MatchTokenType(TokenType.COMMA))
         {
@@ -686,6 +945,7 @@ class Parser
             {
                 return false;
             }
+            m_paramCount++;
         }
 
         return true;
@@ -693,10 +953,13 @@ class Parser
 
     bool ParseFunctionArgument()
     {
+        int oldParamCount = m_paramCount;
+        m_paramCount = 0;
         if (!ParsePrimaryExpression())
         {
             return false;
         }
+        m_paramCount = oldParamCount;
 
         return true;
     }
@@ -776,6 +1039,17 @@ class Parser
                     return new Token(TokenType.BOOL_CHECK, "__bool_check", m_line);
                 case "_":
                     return new Token(TokenType.UNDERSCORE, "_", m_line);
+
+                // Macros
+                case "__INT_MAX__":
+                    return new Token(TokenType.INTEGER_LITERAL, "2147483647", m_line);
+                case "__INT_WIDTH_BITS__":
+                    return new Token(TokenType.INTEGER_LITERAL, "32", m_line);
+                case "__INT_WIDTH_BYTES__":
+                    return new Token(TokenType.INTEGER_LITERAL, "4", m_line);
+                case "__INT_SIGN_BIT_MASK__":
+                    return new Token(TokenType.INTEGER_LITERAL, "2147483648", m_line);
+
             }
 
             return new Token(TokenType.IDENTIFIER, sb.ToString(), m_line);
@@ -849,6 +1123,10 @@ class Parser
                     m_pos++;
                     return new Token(TokenType.TRAILING_RETURN, sb.ToString(), m_line);
                 }
+                else
+                {
+                    return new Token(TokenType.UNKNOWN, sb.ToString(), m_line);
+                }
             }
         }
 
@@ -866,6 +1144,274 @@ class Parser
         if (m_curToken.type == type)
         {
             return true;
+        }
+        return false;
+    }
+
+    bool InsertFunctionSymbol(string identifier)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                if (m_inFunctionScope && symbol.definitionFound)
+                {
+                    PrintError($"Duplicate definition for function '{identifier}' at line {m_lastValidLine}");
+                    PrintError($"First definition: line {symbol.definitionLine}");
+                }
+                return false;
+            }
+        }
+        m_functionsTbl.Add(new Symbol(identifier, SymbolType.FUNCTION, 0, 0));
+        return true;
+    }
+
+    bool ContainsFunctionSymbol(string identifier)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void MarkFunctionSymbolDefinitionFound(string identifier, int definitionLine)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                symbol.definitionFound = true;
+                symbol.definitionLine = definitionLine;
+                return;
+            }
+        }
+    }
+
+    void MarkFunctionSymbolAsReferenced(string identifier, int referencedLine)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                if (!symbol.definitionFound && !symbol.wasReferenced)
+                {
+                    symbol.wasReferenced = true;
+                    symbol.definitionLine = referencedLine;
+                }
+                return;
+            }
+        }
+    }
+
+    bool IsFunctionSymbolDefinitionFound(string identifier)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return symbol.definitionFound;
+            }
+        }
+        return false;
+    }
+
+    void UpdateFunctionSymbolParamCount(string identifier, int count)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                symbol.paramCount = count;
+                return;
+            }
+        }
+    }
+
+
+    bool MatchFunctionSymbolParamCount(string identifier, int count)
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return symbol.paramCount == count;
+            }
+        }
+        return false;
+    }
+
+    bool AnyReferencedFunctionNotDefined()
+    {
+        foreach (var symbol in m_functionsTbl)
+        {
+            if (symbol.wasReferenced && !symbol.definitionFound)
+            {
+                PrintError($"Unresolved reference of undefined function '{symbol.identifier}' at line {symbol.definitionLine}.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool IsMainFunctionValid()
+    {
+        var mainName = "main";
+        if (ContainsFunctionSymbol(mainName) &&
+            MatchFunctionSymbolParamCount(mainName, 0) &&
+            IsFunctionSymbolDefinitionFound(mainName))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    void ResetFunctionScope()
+    {
+        m_functionScopeTbl.Clear();
+        m_unresolvedGotoTbl.Clear();
+        m_curScopeDepth = 0;
+    }
+
+    bool InsertFunctionScopeSymbol(string identifier, SymbolType symbolType, int scopeDepth, int definitionLine)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier && symbol.definitionFound)
+            {
+                PrintError($"Duplicate definition for '{identifier}' at line {m_lastValidLine}");
+                PrintError($"First definition: line {symbol.definitionLine}");
+                return false;
+            }
+        }
+        m_functionScopeTbl.Add(new Symbol(identifier, symbolType, scopeDepth, definitionLine));
+        return true;
+    }
+
+    bool ContainsFunctionScopeSymbol(string identifier)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void MarkFunctionScopeSymbolDefinitionFound(string identifier, int definitionLine)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                symbol.definitionFound = true;
+                symbol.definitionLine = definitionLine;
+                return;
+            }
+        }
+    }
+
+    void UpdateFunctionScopeSymbolScopeDepth(string identifier, int scopeDepth)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                symbol.scopeDepth = scopeDepth;
+                return;
+            }
+        }
+    }
+
+    bool IsFunctionScopeSymbolDefinitionFound(string identifier)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return symbol.definitionFound;
+            }
+        }
+        return false;
+    }
+
+    bool MatchFunctionScopeSymbolType(string identifier, SymbolType type)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return symbol.symbolType == type;
+            }
+        }
+        return false;
+    }
+
+    bool AnyUnresolvedGoto()
+    {
+        foreach (var symbol in m_unresolvedGotoTbl)
+        {
+            if (!ContainsFunctionScopeSymbol(symbol.identifier))
+            {
+                PrintError($"Use of undefined label symbol '{symbol.identifier}' at line {symbol.definitionLine}.");
+                return true;
+            }
+
+            if (GetFunctionScopeSymbol(symbol.identifier)!.scopeDepth > symbol.scopeDepth)
+            {
+                PrintError($"Label '{symbol.identifier}' is not available at current scope at line {symbol.definitionLine}.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Symbol? GetFunctionScopeSymbol(string identifier)
+    {
+        foreach (var symbol in m_functionScopeTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return symbol;
+            }
+        }
+        return null;
+    }
+
+    bool InsertUnresolvedGotoSymbol(string identifier, int scopeDepth, int definitionLine)
+    {
+        m_unresolvedGotoTbl.Add(new Symbol(identifier, SymbolType.LABEL, scopeDepth, definitionLine));
+        return true;
+    }
+
+    bool InsertTypeNameSymbol(string identifier, int definitionLine)
+    {
+        foreach (var symbol in m_typeNamesTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                PrintError($"Duplicate definition for '{identifier}' at line {m_lastValidLine}");
+                PrintError($"First definition: line {symbol.definitionLine}");
+                return false;
+            }
+        }
+        m_typeNamesTbl.Add(new Symbol(identifier, SymbolType.TYPE_NAME, 0, definitionLine));
+        return true;
+    }
+
+    bool ContainsTypeNameSymbol(string identifier)
+    {
+        foreach (var symbol in m_typeNamesTbl)
+        {
+            if (symbol.identifier == identifier)
+            {
+                return true;
+            }
         }
         return false;
     }
