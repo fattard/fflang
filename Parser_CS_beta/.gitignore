@@ -1,3 +1,7 @@
 /.vs
 /bin
 /obj
+/out/RAM.bin
+/out/FFLang_Program.dll
+/out/FFLang_Program.il
+/out/FFLang_Program.runtimeconfig.json

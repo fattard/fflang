@@ -133,6 +133,7 @@ class Parser
 
     public void Parse()
     {
+        IL_Emitter.InitEmitter();
         if (!ParseCompilationUnit())
         {
             PrintError("Failed to parse program");
@@ -140,6 +141,8 @@ class Parser
         else
         {
             PrintMessage("Program parsed successfully");
+            IL_Emitter.FinishEmitter();
+            IL_Emitter.RunILASM();
         }
     }
 
@@ -320,6 +323,10 @@ class Parser
             }
         }
         UpdateFunctionSymbolParamCount(funcName, m_paramCount);
+        if (m_inFunctionScope)
+        {
+            IL_Emitter.Emit_MethodHeader(funcName, m_paramCount);
+        }
 
         return true;
     }
@@ -396,6 +403,7 @@ class Parser
             PrintError($"Expected '{{' after function header at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+        IL_Emitter.Emit_MethodBodyBegin();
         ConsumeToken();
 
         m_paramCount = 0;
@@ -407,6 +415,10 @@ class Parser
                 return false;
             }
             m_paramCount++;
+        }
+        if (m_paramCount > 0)
+        {
+            IL_Emitter.Emit_InitLocals(m_paramCount);
         }
 
         while (!MatchTokenType(TokenType.RETURN))
@@ -426,11 +438,12 @@ class Parser
             return false;
         }
 
-        if ( !MatchTokenType(TokenType.R_BRACE))
+        if (!MatchTokenType(TokenType.R_BRACE))
         {
             PrintError($"Expected '}}' after return statement at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+        IL_Emitter.Emit_MethodBodyEnd();
         ConsumeToken();
 
         return true;
@@ -545,6 +558,7 @@ class Parser
                     InsertFunctionScopeSymbol(curIdentifier, SymbolType.LABEL, m_curScopeDepth, m_lastValidLine);
                 }
                 MarkFunctionScopeSymbolDefinitionFound(curIdentifier, m_lastValidLine);
+                IL_Emitter.Emit_Label(curIdentifier);
             }
             else
             {
@@ -588,6 +602,7 @@ class Parser
             PrintError($"Label '{m_curToken.value}' is not available at current scope at line {m_lastValidLine}.");
             return false;
         }
+        IL_Emitter.Emit_Goto(m_curToken.value);
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.SEMICOLON))
@@ -642,6 +657,16 @@ class Parser
         }
         ConsumeToken();
 
+        var symbol = GetFunctionScopeSymbol(varName);
+        if (symbol!.symbolType == SymbolType.ARGUMENT_VARIABLE)
+        {
+            IL_Emitter.Emit_StoreArgVar(symbol.scopeDepth);
+        }
+        if (symbol!.symbolType == SymbolType.LOCAL_VARIABLE)
+        {
+            IL_Emitter.Emit_StoreLocalVar(symbol.scopeDepth);
+        }
+
         return true;
     }
 
@@ -666,6 +691,7 @@ class Parser
             return false;
         }
         ConsumeToken();
+        IL_Emitter.Emit_IfBegin(m_curScopeDepth);
 
         if (!MatchTokenType(TokenType.L_BRACE))
         {
@@ -695,12 +721,19 @@ class Parser
 
         if (MatchTokenType(TokenType.ELSE))
         {
+            IL_Emitter.Emit_Else(true, m_curScopeDepth);
             ConsumeToken();
             if (!ParseElseStatement())
             {
                 return false;
             }
         }
+        else
+        {
+            IL_Emitter.Emit_Else(false, m_curScopeDepth);
+        }
+
+        IL_Emitter.Emit_IfEnd(m_curScopeDepth);
 
         return true;
     }
@@ -758,6 +791,7 @@ class Parser
             return false;
         }
         ConsumeToken();
+        IL_Emitter.Emit_DiscardReturn();
 
         return true;
     }
@@ -783,6 +817,7 @@ class Parser
             return false;
         }
         ConsumeToken();
+        IL_Emitter.Emit_Return();
 
         return true;
     }
@@ -796,6 +831,7 @@ class Parser
                 PrintError($"Integer overflow at line {m_lastValidLine}: '{m_curToken.value}' exceeds max allowed value {2147483647}.");
                 return false;
             }
+            IL_Emitter.Emit_LoadConst(m_curToken.value);
             ConsumeToken();
         }
         else if (MatchTokenType(TokenType.IDENTIFIER))
@@ -823,6 +859,7 @@ class Parser
                     PrintError($"Invalid number of arguments for function '{curIdentifier}' at line {m_lastValidLine}.");
                     return false;
                 }
+                IL_Emitter.Emit_Call(curIdentifier, m_paramCount);
                 m_paramCount = oldParamCount;
             }
             else
@@ -831,6 +868,15 @@ class Parser
                 {
                     PrintError($"Undefined symbol '{curIdentifier}' at line {m_lastValidLine}.");
                     return false;
+                }
+                var symbol = GetFunctionScopeSymbol(curIdentifier);
+                if (symbol!.symbolType == SymbolType.ARGUMENT_VARIABLE)
+                {
+                    IL_Emitter.Emit_LoadArgVar(symbol.scopeDepth);
+                }
+                if (symbol!.symbolType == SymbolType.LOCAL_VARIABLE)
+                {
+                    IL_Emitter.Emit_LoadLocalVar(symbol.scopeDepth);
                 }
             }
         }
@@ -871,6 +917,7 @@ class Parser
             return false;
         }
         ConsumeToken();
+        IL_Emitter.Emit_BoolCheck();
 
         return true;
     }
@@ -905,6 +952,7 @@ class Parser
             PrintError($"Invalid number of arguments for function '{funcName}' at line {m_lastValidLine}.");
             return false;
         }
+        IL_Emitter.Emit_Call(funcName, m_paramCount);
         m_paramCount = oldParamCount;
 
         return true;
