@@ -548,7 +548,7 @@ class Parser
                     {
                         var sym = GetFunctionScopeSymbol(curIdentifier);
                         PrintError($"Duplicate definition for '{curIdentifier}' at line {m_lastValidLine}");
-                        PrintError($"First definition: line {sym.definitionLine}");
+                        PrintError($"First definition: line {sym!.definitionLine}");
                         return false;
                     }
                     UpdateFunctionScopeSymbolScopeDepth(curIdentifier, m_curScopeDepth);
