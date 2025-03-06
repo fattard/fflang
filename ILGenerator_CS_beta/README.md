@@ -1,23 +1,28 @@
 ## ILGenerator (C#) [Beta]
 
-This project parses and generates .NET IL code for FFLang source code.
+This project parses and generates .NET IL code from FFLang source code.
 
 ### Introduction
 - Written in C#, using minimal language-specific constructs to facilitate potential porting to other languages.
 - It is a single-pass recursive descent parser, meaning it reports the first error encountered and aborts execution.
-- The tool emits .NET IL code based on the input source code.
+- The tool emits .NET IL code based on the input FFLang source code.
 - The generated IL code is assembled into a functional .NET 8 app (DLL format) using the `ilasm` tool.
 
 ### Usage
 
-1. Pass the FFLang source code file path as a single argument to the program.
-2. Address any lexing, syntactic, and semantic issues reported by the parser.
-3. The generated IL code will be output to the `out` folder at the project root.
-4. This IL code is automatically assembled into a .NET app using `ilasm`, and the result will also be placed in the `out` folder.
-5. The `ilasm` tool should not report any issues during assembly.
+```
+ILGenerator <src_file_path> [--ramBinLength=<length>]
+```
+
+1. Pass the FFLang source code file path as an argument to the program.
+2. Optionally, pass a value (in MB) between 1 and 1024 to the `--ramBinLength=` parameter to control the size of `RAM.bin` file. The default value is 100.
+3. Address any lexing, syntactic, and semantic issues reported by the parser.
+4. The generated IL code will be output to the `out` folder at the project root.
+5. This IL code is automatically assembled into a .NET app using `ilasm`, and the result will also be placed in the `out` folder.
+6. The `ilasm` tool should not report any issues during assembly.
 
 ### Running the Generated App
-1. The generated .NET 8 app can be run using the following command:
+1. The generated .NET 8 app can be executed using the following command:
 ```
 dotnet.exe FFLang_Program.dll
 ```

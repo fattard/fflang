@@ -85,6 +85,7 @@ class Parser
 {
     private Token m_curToken;
     private string m_srcCodeTxt;
+    private int m_ramBinLength_MB;
     private int m_pos;
     private int m_line;
     private int m_lastValidLine;
@@ -97,10 +98,11 @@ class Parser
     private List<Symbol> m_unresolvedGotoTbl;
     private List<Symbol> m_typeNamesTbl;
 
-    public Parser(string srcCodeTxt)
+    public Parser(string srcCodeTxt, int ramBinLength_MB)
     {
         m_curToken = new Token(TokenType.UNKNOWN, "", 1);
         m_srcCodeTxt = srcCodeTxt;
+        m_ramBinLength_MB = ramBinLength_MB;
         m_pos = 0;
         m_line = 1;
         m_lastValidLine = 1;
@@ -133,7 +135,7 @@ class Parser
 
     public void Parse()
     {
-        IL_Emitter.InitEmitter();
+        IL_Emitter.InitEmitter(m_ramBinLength_MB);
         if (!ParseCompilationUnit())
         {
             PrintError("Failed to parse program");
@@ -1480,18 +1482,48 @@ class Program
 {
     static void Main(string[] args)
     {
+        string srcCodePath = "";
+        int ramBinLength_MB = 100;
+
         if (args.Length == 0)
         {
             Console.WriteLine("Nothing to parse.");
+            Console.WriteLine();
+            Console.WriteLine("Usage:");
+            Console.WriteLine("    ILGenerator <src_file_path> [--ramBinLength=<length>]");
+            Console.WriteLine();
+            Console.WriteLine("Params:");
+            Console.WriteLine("    src_file_path:               Path to the FFLang source code file");
+            Console.WriteLine("    --ramBinLength=<length>:     (Optional) Specifies 'RAM.bin' file size in MB.");
+            Console.WriteLine("                                 Allowed range: 1 to 1024. Default 100");
+            return;
         }
-        else if (args.Length == 1)
+
+        foreach (var arg in args)
         {
-            var parser = new Parser(System.IO.File.ReadAllText(args[0]));
-            parser.Parse();
+            if (arg.StartsWith("--ramBinLength="))
+            {
+                if (int.TryParse(arg.Replace("--ramBinLength=", ""), out ramBinLength_MB))
+                {
+                    if (ramBinLength_MB <= 0 || ramBinLength_MB > 1024)
+                    {
+                        Console.WriteLine($"Invalid 'RAM.bin' size. Allowed range (in MB): 1 to 1024. Default 100");
+                        return;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid 'RAM.bin' size. Allowed range (in MB): 1 to 1024. Default 100");
+                    return;
+                }
+            }
+            else
+            {
+                srcCodePath = arg;
+            }
         }
-        else
-        {
-            Console.WriteLine("Invalid arguments. Provide a single file path.");
-        }
+    
+        var parser = new Parser(System.IO.File.ReadAllText(args[0]), ramBinLength_MB);
+        parser.Parse();
     }
 }

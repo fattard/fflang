@@ -2,7 +2,7 @@
   "profiles": {
     "Parser_CS": {
       "commandName": "Project",
-      "commandLineArgs": "snippet_IL_Tests.txt",
+      "commandLineArgs": "snippet_IL_Tests.txt --ramBinLength=100",
       "workingDirectory": ".\\"
     }
   }

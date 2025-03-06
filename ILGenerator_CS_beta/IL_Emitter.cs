@@ -63,7 +63,7 @@ static class IL_Emitter
                 valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler V_3)
 
     //ldc.i4     0x40000000 // 1GB
-    ldc.i4     104857600 // 100MB
+    ldc.i4     [[[_RAM.BIN_]]]
     newarr     [System.Runtime]System.Byte
     stsfld     uint8[] Program::'$_RAM'
     ldstr      ""RAM.bin""
@@ -213,10 +213,10 @@ FF_MAIN:
         System.IO.File.WriteAllText("out\\FFLang_Program.runtimeconfig.json", json);
     }
 
-    public static void InitEmitter()
+    public static void InitEmitter(int ramBinLength_MB)
     {
         s_sb = new StringBuilder(15000);
-        s_sb.AppendLine(WriteIL_Begin());
+        s_sb.AppendLine(WriteIL_Begin().Replace("[[[_RAM.BIN_]]]", $"{ramBinLength_MB * 1024 * 1024} // {ramBinLength_MB} MB"));
     }
 
     public static void FinishEmitter()

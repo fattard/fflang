@@ -1,3 +1,31 @@
+### Compiling
+```
+Usage:
+    ILGenerator <src_file_path> [--ramBinLength=<length>]
+
+Params:
+    src_file_path:               Path to the FFLang source code file
+    --ramBinLength=<length>:     (Optional) Specifies 'RAM.bin' file size in MB.
+                                 Allowed range: 1 to 1024. Default 100
+```
+The generated IL code is automatically assembled into a .NET app using `ilasm`, and the result is placed in the `out` folder.
+The `ilasm` tool is part of the .NET SDK and must be available.
+
+### Running the Generated App
+1. The generated .NET 8 app can be executed using the following command:
+```
+dotnet.exe FFLang_Program.dll
+```
+2. Observe any .NET exceptions logged to the console during execution.
+3. Confirm that the `Exit Code` logged at the end of the execution matches the expected result for the FFLang application.
+4. Use a hex editor to inspect the memory footprints left in the `RAM.bin` file to ensure proper execution.
+5. The `RAM.bin` file is reused on subsequent launches. If needed, manually clean the file before running the app again.
+
+##
+
+### About
+`FFLang` is toy programming language created as a research project on how programming languages evolve over time.
+
 ### General
 
 - **Type System**: Statically typed.
@@ -17,7 +45,7 @@
 ### Functions
 
 - Parameters are passed by value.
-- All functions must return a value. A `Void` type will be introduced in future versions for functions without return values.
+- All functions must return a value. A `Void` type might be introduced in future versions for functions without return values.
 - To explicit discard a value, use the **discard statement** by doing `_ = someFunction(...)`.
 - Recursion is allowed.
 
