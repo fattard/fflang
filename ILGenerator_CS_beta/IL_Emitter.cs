@@ -8,7 +8,7 @@ static class IL_Emitter
     static string WriteIL_Begin()
     {
         return @"
-// FFLang Program - lang version 0
+// FFLang Program - lang version 0.0
 
 
 .assembly extern System.Runtime
@@ -49,10 +49,10 @@ static class IL_Emitter
 .corflags 0x00000001    //  ILONLY
 
 
-.class private abstract auto ansi sealed beforefieldinit Program
+.class private abstract auto ansi sealed beforefieldinit FFLang_Runtime.'$RuntimeEnv'
        extends [System.Runtime]System.Object {
 
-.field private static uint8[] '$_RAM'
+.field public static uint8[] '$_RAM'
 
 .method private hidebysig static void  '$cs_Main'(string[] args) cil managed
 {
@@ -62,10 +62,6 @@ static class IL_Emitter
     .locals init (string V_0, int32 V_1, uint8[] V_2,
                 valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler V_3)
 
-    //ldc.i4     0x40000000 // 1GB
-    ldc.i4     [[[_RAM.BIN_]]]
-    newarr     [System.Runtime]System.Byte
-    stsfld     uint8[] Program::'$_RAM'
     ldstr      ""RAM.bin""
     stloc.0
     ldloc.0
@@ -77,7 +73,7 @@ static class IL_Emitter
     stloc.2
     ldloc.2
     ldc.i4.0
-    ldsfld     uint8[] Program::'$_RAM'
+    ldsfld     uint8[] FFLang_Runtime.'$RuntimeEnv'::'$_RAM'
     ldc.i4.0
     ldloc.2
     ldlen
@@ -88,10 +84,10 @@ static class IL_Emitter
                                                                     int32,
                                                                     int32)
 FF_MAIN:
-    call       int32 Program::main()
+    call       int32 FFLang_Global.Functions::main()
     stloc.1
     ldloc.0
-    ldsfld     uint8[] Program::'$_RAM'
+    ldsfld     uint8[] FFLang_Runtime.'$RuntimeEnv'::'$_RAM'
     call       void [System.Runtime]System.IO.File::WriteAllBytes(string,
                                                                             uint8[])
     ldloca.s   V_3
@@ -109,12 +105,27 @@ FF_MAIN:
     call       instance string [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::ToStringAndClear()
     call       void [System.Console]System.Console::WriteLine(string)
     ret
-} // end of method Program::'$cs_Main'
+} // end of method '$RuntimeEnv'::'$cs_Main'
 
+.method private hidebysig specialname rtspecialname static void  .cctor() cil managed
+{
+    .maxstack  8
+
+    ldc.i4     [[[_RAM.BIN_]]]
+    newarr     [System.Runtime]System.Byte
+    stsfld     uint8[] FFLang_Runtime.'$RuntimeEnv'::'$_RAM'
+    ret
+} // end of method '$RuntimeEnv'::.cctor
+
+} // end of class FFLang_Runtime.'$RuntimeEnv'
+
+
+.class public abstract auto ansi sealed beforefieldinit FFLang_Global.Functions
+       extends [System.Runtime]System.Object {
 
 // ========== FFLang Built-ins
 
-.method public hidebysig static int32  __builtin_int_add(int32 a, int32 b) cil managed
+.method private hidebysig static int32  __builtin_int_add(int32 a, int32 b) cil managed
 {
     .maxstack  2
 
@@ -124,7 +135,7 @@ FF_MAIN:
     ret
 }
 
-.method public hidebysig static int32  __builtin_int_nand(int32 a, int32 b) cil managed
+.method private hidebysig static int32  __builtin_int_nand(int32 a, int32 b) cil managed
 {
     .maxstack  2
 
@@ -135,11 +146,11 @@ FF_MAIN:
     ret
 }
 
-.method public hidebysig static int32  __builtin_int_mem_read(int32 addr) cil managed
+.method private hidebysig static int32  __builtin_int_mem_read(int32 addr) cil managed
 {
     .maxstack  2
 
-    ldsfld     uint8[] Program::'$_RAM'
+    ldsfld     uint8[] FFLang_Runtime.'$RuntimeEnv'::'$_RAM'
     ldarg.0
     call       valuetype [System.Runtime]System.Span`1<!!0> [System.Memory]System.MemoryExtensions::AsSpan<uint8>(!!0[], int32)
     call       valuetype [System.Runtime]System.ReadOnlySpan`1<!0> valuetype [System.Runtime]System.Span`1<uint8>::op_Implicit(valuetype [System.Runtime]System.Span`1<!0>)
@@ -147,11 +158,11 @@ FF_MAIN:
     ret
 }
 
-.method public hidebysig static int32  __builtin_int_mem_write(int32 addr, int32 data) cil managed
+.method private hidebysig static int32  __builtin_int_mem_write(int32 addr, int32 data) cil managed
 {
     .maxstack  2
 
-    ldsfld     uint8[] Program::'$_RAM'
+    ldsfld     uint8[] FFLang_Runtime.'$RuntimeEnv'::'$_RAM'
     ldarg.0
     call       valuetype [System.Runtime]System.Span`1<!!0> [System.Memory]System.MemoryExtensions::AsSpan<uint8>(!!0[], int32)
     ldarg.1
@@ -160,7 +171,7 @@ FF_MAIN:
     ret
 }
 
-.method public hidebysig static bool  __bool_check(int32 v) cil managed
+.method private hidebysig static bool  __bool_check(int32 v) cil managed
 {
     .maxstack  2
 
@@ -183,7 +194,7 @@ FF_MAIN:
 
 // ========== FFLang program END
 
-} // end of class Program
+} // end of class FFLang_Global.Functions
 ";
     }
 
@@ -245,7 +256,7 @@ FF_MAIN:
 
     public static void Emit_Call(string functionName, int argsCount)
     {
-        s_sb.Append($"    {"call",-11}int32 Program::'{functionName}'(");
+        s_sb.Append($"    {"call",-11}int32 FFLang_Global.Functions::'{functionName}'(");
         for (int i = 0; i < argsCount; i++)
         {
             s_sb.Append("int32");
@@ -259,7 +270,7 @@ FF_MAIN:
 
     public static void Emit_BoolCheck()
     {
-        s_sb.AppendLine($"    {"call",-11}bool Program::{"__bool_check"}(int32)");
+        s_sb.AppendLine($"    {"call",-11}bool FFLang_Global.Functions::{"__bool_check"}(int32)");
     }
 
     public static void Emit_IfBegin(int scopeDepth)
