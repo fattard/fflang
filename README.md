@@ -1,10 +1,11 @@
 ### Compiling
 ```
 Usage:
-    ILGenerator <src_file_path> [--ramBinLength=<length>]
+    ILGenerator_CS <src_file_path> [--ramBinLength=<length>] [--debug]
 
 Params:
     src_file_path:               Path to the FFLang source code file
+    --debug:                     (Optional) Includes built-in: 'func __dbg_int(v: Int) -> Int'
     --ramBinLength=<length>:     (Optional) Specifies 'RAM.bin' file size in MB.
                                  Allowed range: 1 to 1024. Default 100
 ```
@@ -14,7 +15,7 @@ The `ilasm` tool is part of the .NET SDK and must be available.
 ### Running the Generated App
 1. The generated .NET 8 app can be executed using the following command:
 ```
-dotnet.exe FFLang_Program.dll
+dotnet FFLang_Program.dll
 ```
 2. Observe any .NET exceptions logged to the console during execution.
 3. Confirm that the `Exit Code` logged at the end of the execution matches the expected result for the FFLang application.

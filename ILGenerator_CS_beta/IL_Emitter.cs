@@ -181,6 +181,28 @@ FF_MAIN:
     ret
 }
 
+.method private hidebysig static int32  __dbg_int(int32 v) cil managed
+{
+    .maxstack  3
+    .locals init (valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler V_0)
+
+    ldloca.s   V_0
+    ldc.i4.8
+    ldc.i4.1
+    call       instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::.ctor(int32, int32)
+    ldloca.s   V_0
+    ldstr      ""[DEBUG] ""
+    call       instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)
+    ldloca.s   V_0
+    ldarg.0
+    call       instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)
+    ldloca.s   V_0
+    call       instance string [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::ToStringAndClear()
+    call       void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.0
+    ret
+}
+
 // ================================
 
 

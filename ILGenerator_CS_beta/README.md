@@ -11,15 +11,16 @@ This project parses and generates .NET IL code from FFLang source code.
 ### Usage
 
 ```
-ILGenerator <src_file_path> [--ramBinLength=<length>]
+ILGenerator_CS <src_file_path> [--ramBinLength=<length>] [--debug]
 ```
 
 1. Pass the FFLang source code file path as an argument to the program.
 2. Optionally, pass a value (in MB) between 1 and 1024 to the `--ramBinLength=` parameter to control the size of `RAM.bin` file. The default value is 100.
-3. Address any lexing, syntactic, and semantic issues reported by the parser.
-4. The generated IL code will be output to the `out` folder at the project root.
-5. This IL code is automatically assembled into a .NET app using `ilasm`, and the result will also be placed in the `out` folder.
-6. The `ilasm` tool should not report any issues during assembly.
+3. Optionally, use the flag `--debug` to enable the use of built-in: `func __dbg_int(v: Int) -> Int`
+4. Address any lexing, syntactic, and semantic issues reported by the parser.
+5. The generated IL code will be output to the `out` folder at the project root.
+6. This IL code is automatically assembled into a .NET app using `ilasm`, and the result will also be placed in the `out` folder.
+7. The `ilasm` tool should not report any issues during assembly.
 
 ### Running the Generated App
 1. The generated .NET 8 app can be executed using the following command:

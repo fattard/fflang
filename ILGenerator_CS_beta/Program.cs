@@ -98,7 +98,7 @@ class Parser
     private List<Symbol> m_unresolvedGotoTbl;
     private List<Symbol> m_typeNamesTbl;
 
-    public Parser(string srcCodeTxt, int ramBinLength_MB)
+    public Parser(string srcCodeTxt, int ramBinLength_MB, bool isDebugConfig)
     {
         m_curToken = new Token(TokenType.UNKNOWN, "", 1);
         m_srcCodeTxt = srcCodeTxt;
@@ -131,6 +131,13 @@ class Parser
         UpdateFunctionSymbolParamCount("__builtin_int_mem_write", 2);
 
         InsertTypeNameSymbol("Int", 0);
+
+        if (isDebugConfig)
+        {
+            InsertFunctionSymbol("__dbg_int");
+            MarkFunctionSymbolDefinitionFound("__dbg_int", 0);
+            UpdateFunctionSymbolParamCount("__dbg_int", 1);
+        }
     }
 
     public void Parse()
@@ -1489,16 +1496,18 @@ class Program
     {
         string srcCodePath = "";
         int ramBinLength_MB = 100;
+        bool isDebug = false;
 
         if (args.Length == 0)
         {
             Console.WriteLine("Nothing to parse.");
             Console.WriteLine();
             Console.WriteLine("Usage:");
-            Console.WriteLine("    ILGenerator <src_file_path> [--ramBinLength=<length>]");
+            Console.WriteLine("    ILGenerator_CS <src_file_path> [--ramBinLength=<length>] [--debug]");
             Console.WriteLine();
             Console.WriteLine("Params:");
             Console.WriteLine("    src_file_path:               Path to the FFLang source code file");
+            Console.WriteLine("    --debug:                     (Optional) Includes built-in: 'func __dbg_int(v: Int) -> Int'");
             Console.WriteLine("    --ramBinLength=<length>:     (Optional) Specifies 'RAM.bin' file size in MB.");
             Console.WriteLine("                                 Allowed range: 1 to 1024. Default 100");
             return;
@@ -1522,13 +1531,17 @@ class Program
                     return;
                 }
             }
+            else if (arg == "--debug")
+            {
+                isDebug = true;
+            }
             else
             {
                 srcCodePath = arg;
             }
         }
-    
-        var parser = new Parser(System.IO.File.ReadAllText(args[0]), ramBinLength_MB);
+
+        var parser = new Parser(System.IO.File.ReadAllText(args[0]), ramBinLength_MB, isDebug);
         parser.Parse();
     }
 }
