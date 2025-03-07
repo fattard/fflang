@@ -932,6 +932,11 @@ class Parser
             return false;
         }
         var funcName = m_curToken.value;
+        if (!ContainsFunctionSymbol(funcName))
+        {
+            PrintError($"Undefined function '{funcName}' at line {m_lastValidLine}.");
+            return false;
+        }
         MarkFunctionSymbolAsReferenced(funcName, m_lastValidLine);
         ConsumeToken();
 
