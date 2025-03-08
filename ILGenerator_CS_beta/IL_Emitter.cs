@@ -403,6 +403,6 @@ FF_MAIN:
             System.IO.Directory.CreateDirectory("out");
         }
 
-        System.Diagnostics.Process.Start("cmd.exe", "/C C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\ilasm.exe out\\FFLang_Program.il /dll");
+        System.Diagnostics.Process.Start("ilasm", "out\\FFLang_Program.il /dll");
     }
 }
