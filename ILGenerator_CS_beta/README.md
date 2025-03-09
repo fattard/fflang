@@ -54,4 +54,4 @@ When `--debug` flag is specified, the following function is available:
 ```fflang
 func __dbg_int(v: Int) -> Int
 ```
-Prints the text representation of the specified value of `v` to the pplication standard output stream for. Always returns 0, so return can be discarded.
+Prints the text representation of the specified value of `v` to the application standard output stream for. Always returns 0, so return can be discarded.

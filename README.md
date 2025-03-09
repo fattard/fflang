@@ -1,6 +1,6 @@
 ### Introduction
 
-`FFLang` is toy programming language created as a research project on how programming languages evolve over time.  
+`FFLang` is a toy programming language created as a research project on how programming languages evolve over time.  
 The `version 0` of the language is the current version. It is currently in the **beta** phase.
 - [Grammar](grammar.txt) for `version 0` is stable and considered feature complete.
 - A reference parser and code generator (targeting .NET IL output), also in **beta**, is provided as a .NET 8 C# [project](ILGenerator_CS_beta).
