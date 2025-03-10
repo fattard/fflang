@@ -268,12 +268,12 @@ FF_MAIN:
 
     public static void Emit_Label(string label)
     {
-        s_sb.AppendLine($"{label}:");
+        s_sb.AppendLine($"'{label}':");
     }
 
     public static void Emit_Goto(string label)
     {
-        s_sb.AppendLine($"    {"br.s",-11}{label}");
+        s_sb.AppendLine($"    {"br",-11}'{label}'");
     }
 
     public static void Emit_Call(string functionName, int argsCount)
@@ -297,14 +297,14 @@ FF_MAIN:
 
     public static void Emit_IfBegin(int scopeDepth)
     {
-        s_sb.AppendLine($"    {"brfalse.s",-11}'IF_FALSE_${s_ifElseScopeCount}_${scopeDepth}'");
+        s_sb.AppendLine($"    {"brfalse",-11}'IF_FALSE_${s_ifElseScopeCount}_${scopeDepth}'");
     }
 
     public static void Emit_Else(bool hasBlock, int scopeDepth)
     {
         if (hasBlock)
         {
-            s_sb.AppendLine($"    {"br.s",-11}'IF_END_${s_ifElseScopeCount}_${scopeDepth}'");
+            s_sb.AppendLine($"    {"br",-11}'IF_END_${s_ifElseScopeCount}_${scopeDepth}'");
         }
         s_sb.AppendLine($"'IF_FALSE_${s_ifElseScopeCount}_${scopeDepth}':");
     }
@@ -403,6 +403,7 @@ FF_MAIN:
             System.IO.Directory.CreateDirectory("out");
         }
 
-        System.Diagnostics.Process.Start("ilasm", "out\\FFLang_Program.il /dll");
+        var process = System.Diagnostics.Process.Start("ilasm", "out\\FFLang_Program.il /dll");
+        process?.WaitForExit();
     }
 }
