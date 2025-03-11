@@ -1541,7 +1541,7 @@ class Program
             }
         }
 
-        var parser = new Parser(System.IO.File.ReadAllText(args[0]), ramBinLength_MB, isDebug);
+        var parser = new Parser(System.IO.File.ReadAllText(srcCodePath), ramBinLength_MB, isDebug);
         parser.Parse();
     }
 }
