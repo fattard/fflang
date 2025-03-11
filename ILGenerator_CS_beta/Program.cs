@@ -180,11 +180,6 @@ class Parser
             }
         }
 
-        if (AnyReferencedFunctionNotDefined())
-        {
-            return false;
-        }
-
         if (!MatchTokenType(TokenType.EOF_TOKEN))
         {
             if (m_pos < m_srcCodeTxt.Length)
@@ -195,6 +190,11 @@ class Parser
             {
                 PrintError($"Unexpected token at end of file. Found '{m_curToken.value}'");
             }
+            return false;
+        }
+
+        if (AnyReferencedFunctionNotDefined())
+        {
             return false;
         }
 
