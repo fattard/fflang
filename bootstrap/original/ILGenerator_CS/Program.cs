@@ -212,6 +212,22 @@ FF_MAIN:
 } // end of class FFLang_Global.Functions
 ";
 
+    static string s_ILRuntimeJson = @"
+{
+  ""runtimeOptions"": {
+    ""tfm"": ""net8.0"",
+    ""framework"": {
+      ""name"": ""Microsoft.NETCore.App"",
+      ""version"": ""8.0.0""
+    },
+    ""configProperties"": {
+      ""System.Reflection.Metadata.MetadataUpdater.IsSupported"": false,
+      ""System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization"": false
+    }
+  }
+}
+";
+
     public static byte[] s_RAM;
 
     static void Main(string[] args)
@@ -272,12 +288,19 @@ FF_MAIN:
         var ILEndArr = Encoding.UTF8.GetBytes(s_ILEnd);
         Array.Copy(ILEndArr, 0, s_RAM, 40960, ILEndArr.Length);
 
+        var ILRuntimeJsonArr = Encoding.UTF8.GetBytes(s_ILRuntimeJson);
+        Array.Copy(ILRuntimeJsonArr, 0, s_RAM, 41088, ILRuntimeJsonArr.Length);
+
         var srcCodeArr = System.IO.File.ReadAllBytes(srcCodePath);
         Array.Copy(srcCodeArr, 0, s_RAM, 65536, srcCodeArr.Length);
 
         // ------ FFLang Entry point
         int exitCode = ILGenerator.main();
         // -------------------------
+
+        var outputTxtBytes = s_RAM.AsSpan(131072, 65536);
+        var outputTxt = Encoding.UTF8.GetString(outputTxtBytes).TrimEnd('\0');
+        System.IO.File.WriteAllText("FFLang_Program.il", outputTxt);
 
         System.IO.File.WriteAllBytes(ramDataFile, s_RAM);
 

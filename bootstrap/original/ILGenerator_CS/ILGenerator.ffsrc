@@ -1,3 +1,10 @@
+using func IL_Emitter_getStrBuffer_ptr() -> Int;
+using func IL_Emitter_getBaseILBeginTxt_ptr() -> Int;
+using func IL_Emitter_getBaseILEndTxt_ptr() -> Int;
+using func IL_Emitter_appendTxt(txt_ptr: Int) -> Int;
+using func Lexer_getTokenStrBuff_ptr() -> Int;
+using func getCurTokenValue_ptr() -> Int;
+using func printError(message_ptr: Int) -> Int;
 
 func _not(a: Int) -> Int
 {
@@ -273,8 +280,383 @@ END:
     return result;
 }
 
+func initGlobals() -> Int
+{
+    var g_offset: Int;
+
+    set g_offset = 0;
+
+    // Clean globals data arena - 32 KB len
+    _ = memSet(g_offset, 0, 32768);
+
+    // Write hardcoded pointers
+    _ = memWrite(_add(g_offset, 64), 131072); // s_IL_Emitter_strBuffer
+    _ = memWrite(_add(g_offset, 76), 32768); // s_IL_Emitter_baseILBegin_txt
+    _ = memWrite(_add(g_offset, 80), 40960); // s_IL_Emitter_baseILEnd_txt
+    _ = memWrite(_add(g_offset, 84), 41088); // s_IL_Emitter_runtimeJson_txt
+    _ = memWrite(_add(g_offset, 120), _add(g_offset, 400)); // s_tokenStrBuff
+    _ = memWrite(_add(g_offset, 144), _add(g_offset, 200)); // s_curToken_value
+    _ = memWrite(_add(g_offset, 160), 65536); // s_srcCodeTxt
+
+
+    // Clean s_IL_Emitter_strBuffer - 64 KB length
+    _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 65536);
+
+    return 0;
+}
+
+func initParser() -> Int
+{
+    var g_offset: Int;
+
+    set g_offset = 0;
+
+    _ = memWrite(_add(g_offset, 140), 100); // s_curToken_type = TokenType.UNKNOWN
+    _ = memWrite(getCurTokenValue_ptr(), 0); // s_curToken_value[0] = '\0'
+    _ = memWrite(_add(g_offset, 148), 1); // s_curToken_line = 1
+
+    _ = memWrite(Lexer_getTokenStrBuff_ptr(), 0); // s_tokenStrBuff[0] = '\0'
+
+    _ = memWrite(_add(g_offset, 164), 0); // s_pos = 0
+    _ = memWrite(_add(g_offset, 168), 1); // s_line = 1
+    _ = memWrite(_add(g_offset, 172), 1); // s_lastValidLine = 1
+    _ = memWrite(_add(g_offset, 176), 0); // s_curScopeDepth = 0
+    _ = memWrite(_add(g_offset, 180), 0); // s_inFunctionScope = 0
+    _ = memWrite(_add(g_offset, 172), 0); // s_paramCount = 0
+
+    return 0;
+}
+
+func Lexer_getTokenStrBuff_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 120)); // s_tokenStrBuff
+}
+
+func Lexer_getSrcCodeTxt_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 160)); // s_srcCodeTxt
+}
+
+func Lexer_getPos() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 164)); // s_pos
+}
+
+func Lexer_getLine() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 168)); // s_line
+}
+
+func Lexer_getLastValidLine() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 172)); // s_lastValidLine
+}
+
+func Lexer_incPos() -> Int
+{
+    var g_offset: Int;
+    var pos: Int;
+
+    set g_offset = 0;
+
+    set pos = memRead(_add(g_offset, 164)); // s_pos
+    _ = memWrite(_add(g_offset, 164), _add(pos, 1)); // s_pos
+
+    // returns incremented pos
+    return pos;
+}
+
+func Lexer_incLine() -> Int
+{
+    var g_offset: Int;
+    var line: Int;
+
+    set g_offset = 0;
+
+    set line = memRead(_add(g_offset, 168)); // s_line
+    _ = memWrite(_add(g_offset, 168), _add(line, 1)); // s_line
+
+    // returns incremented line
+    return line;
+}
+
+func getCurTokenType() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 140)); // s_curToken_type
+}
+
+func getCurTokenValue_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 144)); // s_curToken_value
+}
+
+func getCurTokenLine() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 148)); // s_curToken_line
+}
+
+func setCurToken(type: Int, valueStr_ptr: Int, line: Int) -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    _ = memWrite(_add(g_offset, 140), type);
+    _ = memWrite(_add(g_offset, 148), line);
+    _ = strCpy(valueStr_ptr, getCurTokenValue_ptr());
+
+    return 0;
+}
+
+func matchTokenType(type: Int) -> Int
+{
+    return _eq(type, getCurTokenType());
+}
+
+func notMatchTokenType(type: Int) -> Int
+{
+    return _neq(type, getCurTokenType());
+}
+
+func getCurScopeDepth() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 176)); // s_curScopeDepth
+}
+
+func incCurScopeDepth() -> Int
+{
+    var g_offset: Int;
+    var depth: Int;
+
+    set g_offset = 0;
+
+    set depth = memRead(_add(g_offset, 176)); // s_curScopeDepth
+    _ = memWrite(_add(g_offset, 176), _add(depth, 1)); // s_curScopeDepth
+
+    // returns incremented curScopeDepth
+    return depth;
+}
+
+func decCurScopeDepth() -> Int
+{
+    var g_offset: Int;
+    var depth: Int;
+
+    set g_offset = 0;
+
+    set depth = memRead(_add(g_offset, 176)); // s_curScopeDepth
+    _ = memWrite(_add(g_offset, 176), _sub(depth, 1)); // s_curScopeDepth
+
+    // returns decremented curScopeDepth
+    return depth;
+}
+
+func isInFunctionScope() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 180)); // s_inFunctionScope
+}
+
+func getParamCount() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 184)); // s_paramCount
+}
+
+func setParamCount(count: Int) -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    _ = memWrite(_add(g_offset, 184), count); // s_paramCount
+    return 0;
+}
+
+func incParamCount() -> Int
+{
+    var g_offset: Int;
+    var count: Int;
+
+    set g_offset = 0;
+
+    set count = memRead(_add(g_offset, 184)); // s_paramCount
+    _ = memWrite(_add(g_offset, 184), _add(count, 1)); // s_paramCount
+
+    // returns incremented paramCount
+    return count;
+}
+
+func IL_Emitter_initEmitter() -> Int
+{
+    var result: Int;
+
+    set result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
+
+    return result;
+}
+
+func IL_Emitter_finishEmitter() -> Int
+{
+    var result: Int;
+
+    set result = IL_Emitter_appendTxt(IL_Emitter_getBaseILEndTxt_ptr());
+
+    return result;
+}
+
+func IL_Emitter_getStrBuffer_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 64)); // s_IL_Emitter_strBuffer
+}
+
+func IL_Emitter_getBaseILBeginTxt_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 76)); // s_IL_Emitter_baseILBegin_txt
+}
+
+func IL_Emitter_getBaseILEndTxt_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 80)); // s_IL_Emitter_baseILEnd_txt
+}
+
+func IL_Emitter_getRuntimeJsonTxt_ptr() -> Int
+{
+    var g_offset: Int;
+    set g_offset = 0;
+
+    return memRead(_add(g_offset, 84)); // s_IL_Emitter_runtimeJson_txt
+}
+
+func IL_Emitter_appendChar(c: Int) -> Int
+{
+    var g_offset: Int;
+    var pos: Int;
+    var strBuffer: Int;
+    var result: Int;
+
+    set g_offset = 0;
+
+    set result = 1;
+    set strBuffer = IL_Emitter_getStrBuffer_ptr(); // s_IL_Emitter_strBuffer
+    set pos = memRead(_add(g_offset, 68)); // s_IL_Emitter_strBuffer_pos
+
+    _ = memWrite8(_add(strBuffer, pos), c); // s_IL_Emitter_strBuffer[pos] = c
+    set pos = _add(pos, 1); // pos++
+
+    if (__bool_check(_gte(pos, 65536))) // max len 64 KB
+    {
+        set result = 0;
+        //_ = printError($"The IL_Emitter strBuffer limit is {65536} bytes");
+        goto END;
+    }
+
+    // Insert termination
+    _ = memWrite8(_add(strBuffer, pos), 0); // s_IL_Emitter_strBuffer[pos] = '\0'
+
+    _ = memWrite(_add(g_offset, 68), pos); // update s_IL_Emitter_strBuffer_pos
+
+END:
+    return result;
+}
+
+func IL_Emitter_appendTxt(txt_ptr: Int) -> Int
+{
+    var pos: Int;
+    var c: Int;
+    var result: Int;
+
+    set result = 1;
+
+LOOP:
+    set c = memRead8(_add(pos, txt_ptr));
+    set result = IL_Emitter_appendChar(c);
+
+    if (__bool_check(_eq(result, 0)))
+    {
+        goto END;
+    }
+
+    set pos = _add(pos, 1);
+
+    if (__bool_check(_eq(c, 0))) // '\0'
+    {
+        goto END;
+    }
+
+    goto LOOP;
+
+END:
+    return result;
+}
+
+func parse() -> Int
+{
+    var result: Int;
+
+    set result = IL_Emitter_initEmitter();
+    if (__bool_check(_eq(result, 0)))
+    {
+        //_ = printError($"Failed initEmitter");
+        goto END;
+    }
+    
+    _ = IL_Emitter_finishEmitter();
+
+END:
+    return result;
+}
+
 
 func main() -> Int
+{
+    _ = initGlobals();
+    _ = initParser();
+
+    _ = parse();
+
+    return 0;
+}
+
+func printError(message_ptr: Int) -> Int
 {
     return 0;
 }
