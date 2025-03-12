@@ -314,6 +314,7 @@
     // & s_IL_Emitter_RuntimeJson_txt   := g_offset + 84
     //
     // & s_tokenStrBuff                 := g_offset + 120
+    // & s_tokenStrBuff_pos             := g_offset + 124
     //
     // & s_curToken_type                := g_offset + 140
     // & s_curToken_value               := g_offset + 144
@@ -334,7 +335,8 @@
     // globals data arena               = g_offset          (max len: 32 KB)
     //
     // s_curToken_value                 = g_offset + 200    (max len: 256 bytes)
-    // s_tokenStrBuff                   = g_offset + 400    (max len: 256 bytes)
+    // s_tokenStrBuff                   = g_offset + 460    (max len: 256 bytes)
+    // s_tmpBuff                        = g_offset + 800    (max len: 256 bytes)
     //
     // s_IL_Emitter_baseILBegin_txt     = 32768             (max len: 8 KB)
     // s_IL_Emitter_baseILEnd_txt       = 40960             (max len: 128 bytes)
@@ -358,7 +360,7 @@
         _ = memWrite(_add(g_offset, 76), 32768); // s_IL_Emitter_baseILBegin_txt
         _ = memWrite(_add(g_offset, 80), 40960); // s_IL_Emitter_baseILEnd_txt
         _ = memWrite(_add(g_offset, 84), 41088); // s_IL_Emitter_runtimeJson_txt
-        _ = memWrite(_add(g_offset, 120), _add(g_offset, 400)); // s_tokenStrBuff
+        _ = memWrite(_add(g_offset, 120), _add(g_offset, 460)); // s_tokenStrBuff
         _ = memWrite(_add(g_offset, 144), _add(g_offset, 200)); // s_curToken_value
         _ = memWrite(_add(g_offset, 160), 65536); // s_srcCodeTxt
 
@@ -381,6 +383,7 @@
         _ = memWrite(_add(g_offset, 148), 1); // s_curToken_line = 1
 
         _ = memWrite(Lexer_getTokenStrBuff_ptr(), 0); // s_tokenStrBuff[0] = '\0'
+        _ = memWrite(_add(g_offset, 124), 0); // s_tokenStrBuff_pos = 0
 
         _ = memWrite(_add(g_offset, 164), 0); // s_pos = 0
         _ = memWrite(_add(g_offset, 168), 1); // s_line = 1
@@ -399,6 +402,24 @@
         /* set */ g_offset = 0;
 
         return memRead(_add(g_offset, 120)); // s_tokenStrBuff
+    }
+
+    public static int Lexer_getTokenStrBuffPos()
+    //func Lexer_getTokenStrBuffPos() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 124)); // s_tokenStrBuff_pos
+    }
+
+    public static int Lexer_resetTokenStrBuffPos()
+    //func Lexer_resetTokenStrBuffPos() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memWrite(_add(g_offset, 124), 0); // s_tokenStrBuff_pos
     }
 
     public static int Lexer_getSrcCodeTxt_ptr()
@@ -445,8 +466,8 @@
 
         /* set */ g_offset = 0;
 
-        /* set */ pos = memRead(_add(g_offset, 164)); // s_pos
-        _ = memWrite(_add(g_offset, 164), _add(pos, 1)); // s_pos
+        /* set */ pos = _add(memRead(_add(g_offset, 164)), 1); // s_pos + 1
+        _ = memWrite(_add(g_offset, 164), pos); // s_pos
 
         // returns incremented pos
         return pos;
@@ -460,8 +481,8 @@
 
         /* set */ g_offset = 0;
 
-        /* set */ line = memRead(_add(g_offset, 168)); // s_line
-        _ = memWrite(_add(g_offset, 168), _add(line, 1)); // s_line
+        /* set */ line = _add(memRead(_add(g_offset, 168)), 1); // s_line + 1
+        _ = memWrite(_add(g_offset, 168), line); // s_line
 
         // returns incremented line
         return line;
@@ -536,8 +557,8 @@
 
         /* set */ g_offset = 0;
 
-        /* set */ depth = memRead(_add(g_offset, 176)); // s_curScopeDepth
-        _ = memWrite(_add(g_offset, 176), _add(depth, 1)); // s_curScopeDepth
+        /* set */ depth = _add(memRead(_add(g_offset, 176)), 1); // s_curScopeDepth + 1
+        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth
 
         // returns incremented curScopeDepth
         return depth;
@@ -551,8 +572,8 @@
 
         /* set */ g_offset = 0;
 
-        /* set */ depth = memRead(_add(g_offset, 176)); // s_curScopeDepth
-        _ = memWrite(_add(g_offset, 176), _sub(depth, 1)); // s_curScopeDepth
+        /* set */ depth = _sub(memRead(_add(g_offset, 176)), 1); // s_curScopeDepth - 1
+        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth
 
         // returns decremented curScopeDepth
         return depth;
@@ -594,11 +615,565 @@
 
         /* set */ g_offset = 0;
 
-        /* set */ count = memRead(_add(g_offset, 184)); // s_paramCount
-        _ = memWrite(_add(g_offset, 184), _add(count, 1)); // s_paramCount
+        /* set */ count = _add(memRead(_add(g_offset, 184)), 1); // s_paramCount + 1
+        _ = memWrite(_add(g_offset, 184), count); // s_paramCount
 
         // returns incremented paramCount
         return count;
+    }
+
+    public static int getKeyword_using()
+    //func getKeyword_using() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 117); // 'u'
+        _ = memWrite(_add(tmpBuff, 1), 115); // 's'
+        _ = memWrite(_add(tmpBuff, 2), 105); // 'i'
+        _ = memWrite(_add(tmpBuff, 3), 110); // 'n'
+        _ = memWrite(_add(tmpBuff, 4), 103); // 'g'
+        _ = memWrite(_add(tmpBuff, 5),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_func()
+    //func getKeyword_func() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 102); // 'f'
+        _ = memWrite(_add(tmpBuff, 1), 117); // 'u'
+        _ = memWrite(_add(tmpBuff, 2), 110); // 'n'
+        _ = memWrite(_add(tmpBuff, 3),  99); // 'c'
+        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_var()
+    //func getKeyword_var() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 118); // 'v'
+        _ = memWrite(_add(tmpBuff, 1),  97); // 'a'
+        _ = memWrite(_add(tmpBuff, 2), 114); // 'r'
+        _ = memWrite(_add(tmpBuff, 3),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_set()
+    //func getKeyword_set() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 115); // 's'
+        _ = memWrite(_add(tmpBuff, 1), 101); // 'e'
+        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite(_add(tmpBuff, 3),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_return()
+    //func getKeyword_return() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 114); // 'r'
+        _ = memWrite(_add(tmpBuff, 1), 101); // 'e'
+        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite(_add(tmpBuff, 3), 117); // 'u'
+        _ = memWrite(_add(tmpBuff, 4), 114); // 'r'
+        _ = memWrite(_add(tmpBuff, 5), 110); // 'n'
+        _ = memWrite(_add(tmpBuff, 6),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_goto()
+    //func getKeyword_goto() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 103); // 'g'
+        _ = memWrite(_add(tmpBuff, 1), 111); // 'o'
+        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite(_add(tmpBuff, 3), 111); // 'o'
+        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_if()
+    //func getKeyword_if() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 105); // 'i'
+        _ = memWrite(_add(tmpBuff, 1), 102); // 'f'
+        _ = memWrite(_add(tmpBuff, 2),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_else()
+    //func getKeyword_else() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 101); // 'e'
+        _ = memWrite(_add(tmpBuff, 1), 108); // 'l'
+        _ = memWrite(_add(tmpBuff, 2), 115); // 's'
+        _ = memWrite(_add(tmpBuff, 3), 101); // 'e'
+        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_underscoreSymbol()
+    //func getKeyword_underscoreSymbol() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff, 0), 95); // '_'
+        _ = memWrite(_add(tmpBuff, 1),  0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getKeyword_boolCheck()
+    //func getKeyword_boolCheck() -> Int
+    {
+        var g_offset = (int)default;
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = _add(g_offset, 800);
+
+        _ = memWrite(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite(_add(tmpBuff,  3), 111); // 'o'
+        _ = memWrite(_add(tmpBuff,  4), 111); // 'o'
+        _ = memWrite(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite(_add(tmpBuff,  6),  95); // '_'
+        _ = memWrite(_add(tmpBuff,  7),  99); // 'c'
+        _ = memWrite(_add(tmpBuff,  8), 104); // 'h'
+        _ = memWrite(_add(tmpBuff,  9), 101); // 'e'
+        _ = memWrite(_add(tmpBuff, 10),  99); // 'c'
+        _ = memWrite(_add(tmpBuff, 11), 107); // 'k'
+        _ = memWrite(_add(tmpBuff, 12),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getNextToken()
+    //func getNextToken() -> Int
+    {
+        var srcTxt_ptr = (int)default;
+        var tokenBuffer_ptr = (int)default;
+        var tokenType = (int)default;
+        var tokenLine = (int)default;
+        var c = (int)default;
+        var pos = (int)default;
+        var tmp_c = (int)default;
+        var tmp_pos = (int)default;
+        var line = (int)default;
+        var readCount = (int)default;
+
+        /* set */ srcTxt_ptr = Lexer_getSrcCodeTxt_ptr();
+        /* set */ tokenBuffer_ptr = Lexer_getTokenStrBuff_ptr();
+        /* set */ pos = Lexer_getPos();
+        /* set */ line = Lexer_getLine();
+
+        _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+        _ = Lexer_resetTokenStrBuffPos();
+
+        /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+        if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+        {
+            /* set */ tokenType = 21; // TokenType.EOF_TOKEN
+            /* set */ tokenLine = line;
+            _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+            goto END;
+        }
+
+    // Skip whitespaces
+    LOOP_SKIP_WHITESPACE:
+        //  ' ' || '\t' || '\r' || '\n'
+        if (__bool_check(_or(_eq(c, 32), _or(_eq(c, 9), _or(_eq(c, 13), _eq(c, 10))))))
+        {
+            if (__bool_check(_eq(c, 10))) // '\n'
+            {
+                /* set */ line = Lexer_incLine();
+            }
+
+            /* set */ pos = Lexer_incPos();
+            if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+            {
+                /* set */ tokenType = 21; // TokenType.EOF_TOKEN
+                /* set */ tokenLine = line;
+                _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+                goto END;
+            }
+            /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+            goto LOOP_SKIP_WHITESPACE;
+        }
+
+        // Skip comments
+        if (__bool_check(_eq(c, 47))) // '/'
+        {
+            /* set */ tmp_pos = _add(pos, 1);
+            /* set */ tmp_c = memRead8(_add(srcTxt_ptr, tmp_pos));
+            if (__bool_check(_eq(tmp_c, 47))) // '/'
+            {
+            LOOP_SKIP_COMMENTS:
+                if (__bool_check(_neq(c, 10))) // '\n'
+                {
+                    /* set */ pos = Lexer_incPos();
+                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                    {
+                        /* set */ tokenType = 21; // TokenType.EOF_TOKEN
+                        /* set */ tokenLine = line;
+                        _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+                        goto END;
+                    }
+                    /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+                    goto LOOP_SKIP_COMMENTS;
+                }
+
+                // Restart checks at whitespaces loop, to avoid recursion
+                goto LOOP_SKIP_WHITESPACE;
+            }
+        }
+
+        if (__bool_check(_or(isLetter(c), _eq(c, 95)))) // letter || '_'
+        {
+            _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+
+        LOOP_IDENTIFIER:
+            if (__bool_check(_or(isLetter(c), _eq(c, 95)))) // letter || '_'
+            {
+                /* set */ readCount = Lexer_tokenBufferAppendChar(c);
+                if (__bool_check(_gte(c, 256)))
+                {
+                    /* set */ tokenType = 100; // TokenType.UNKNOWN
+                    /* set */ tokenLine = line;
+                    _ = memWrite8(_add(tokenBuffer_ptr, readCount), 0); // s_tokenStrBuff[0] = '\0'
+                    goto END;
+                }
+                /* set */ pos = Lexer_incPos();
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                {
+                    /* set */ tokenType = 21; // TokenType.EOF_TOKEN
+                    /* set */ tokenLine = line;
+                    _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+                    goto END;
+                }
+                /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+                goto LOOP_IDENTIFIER;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 117), strEquals(tokenBuffer_ptr, getKeyword_using()))))
+            {
+                /* set */ tokenType = 2; // TokenType.USING
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 102), strEquals(tokenBuffer_ptr, getKeyword_func()))))
+            {
+                /* set */ tokenType = 3; // TokenType.FUNC
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 118), strEquals(tokenBuffer_ptr, getKeyword_var()))))
+            {
+                /* set */ tokenType = 4; // TokenType.VAR
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 115), strEquals(tokenBuffer_ptr, getKeyword_set()))))
+            {
+                /* set */ tokenType = 5; // TokenType.SET
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 105), strEquals(tokenBuffer_ptr, getKeyword_if()))))
+            {
+                /* set */ tokenType = 6; // TokenType.IF
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 101), strEquals(tokenBuffer_ptr, getKeyword_else()))))
+            {
+                /* set */ tokenType = 7; // TokenType.ELSE
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 103), strEquals(tokenBuffer_ptr, getKeyword_goto()))))
+            {
+                /* set */ tokenType = 8; // TokenType.GOTO
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 114), strEquals(tokenBuffer_ptr, getKeyword_return()))))
+            {
+                /* set */ tokenType = 9; // TokenType.RETURN
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getKeyword_underscoreSymbol())))
+            {
+                /* set */ tokenType = 18; // TokenType.UNDERSCORE
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getKeyword_boolCheck())))
+            {
+                /* set */ tokenType = 20; // TokenType.BOOL_CHECK
+                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            /* set */ tokenType = 0; // TokenType.IDENTIFIER
+            /* set */ tokenLine = line;
+            goto END;
+        }
+
+        if (__bool_check(isDigit(c)))
+        {
+            _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+
+        LOOP_DIGIT:
+            if (__bool_check(isDigit(c)))
+            {
+                /* set */ readCount = Lexer_tokenBufferAppendChar(c);
+                if (__bool_check(_gte(c, 256)))
+                {
+                    /* set */ tokenType = 100; // TokenType.UNKNOWN
+                    /* set */ tokenLine = line;
+                    _ = memWrite8(_add(tokenBuffer_ptr, readCount), 0); // s_tokenStrBuff[0] = '\0'
+                    goto END;
+                }
+                /* set */ pos = Lexer_incPos();
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                {
+                    /* set */ tokenType = 21; // TokenType.EOF_TOKEN
+                    /* set */ tokenLine = line;
+                    _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
+                    goto END;
+                }
+                /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+                goto LOOP_DIGIT;
+            }
+
+            /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
+            /* set */ tokenLine = line;
+            goto END;
+        }
+
+        if (__bool_check(_eq(c, 40))) // '('
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 10; // TokenType.L_PAREN
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 41))) // ')'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 11; // TokenType.R_PAREN
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 123))) // '{'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 12; // TokenType.L_BRACE
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 125))) // '}'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 13; // TokenType.R_BRACE
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 59))) // ';'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 14; // TokenType.SEMICOLON
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 44))) // ','
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 16; // TokenType.COMMA
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 58))) // ':'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 15; // TokenType.COLON
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 61))) // '='
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            /* set */ tokenType = 17; // TokenType.EQUALS
+            /* set */ tokenLine = line;
+            goto END;
+        }
+        if (__bool_check(_eq(c, 45))) // '-'
+        {
+            /* set */ pos = Lexer_incPos();
+            _ = Lexer_tokenBufferAppendChar(c);
+            if (__bool_check(_and(_neq(c, 0), _lt(pos, 65536)))) // != '\0' && < 64 KB
+            {
+                /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+                if (__bool_check(_eq(c, 62))) // '>'
+                {
+                    /* set */ pos = Lexer_incPos();
+                    _ = Lexer_tokenBufferAppendChar(c);
+                    /* set */ tokenType = 19; // TokenType.TRAILING_RETURN
+                    /* set */ tokenLine = line;
+                    goto END;
+                }
+                else
+                {
+                    /* set */ tokenType = 100; // TokenType.UNKNOWN
+                    /* set */ tokenLine = line;
+                    goto END;
+                }
+            }
+        }
+
+        /* set */ tokenType = 100; // TokenType.UNKNOWN
+        /* set */ tokenLine = line;
+        _ = Lexer_tokenBufferAppendChar(c);
+
+    END:
+        _ = setCurToken(tokenType, Lexer_getTokenStrBuff_ptr(), tokenLine);
+        return tokenType;
+    }
+
+    public static int consumeToken()
+    //func consumeToken() -> Int
+    {
+        var g_offset = (int)default;
+        var validLine = (int)default;
+
+        /* set */ g_offset = 0;
+
+        /* set */ validLine = getCurTokenLine();
+        _ = memWrite(_add(g_offset, 172), validLine); // s_lastValidLine
+
+        _ = getNextToken();
+
+        return 0;
+    }
+
+    public static int skipUTF8BOMMark()
+    //func skipUTF8BOMMark() -> Int
+    {
+        var g_offset = (int)default;
+        var pos = (int)default;
+        var srcTxt_ptr = (int)default;
+        var c = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ pos = 0;
+        /* set */ srcTxt_ptr = Lexer_getSrcCodeTxt_ptr();
+
+        /* set */ c = memRead8(_add(srcTxt_ptr, pos));
+
+        if (__bool_check(_eq(c, 239))) // 0xEF
+        {
+            // Assume all 3 mark bytes are in place and skip them
+            _ = memWrite(_add(g_offset, 164), _add(pos, 3)); // s_pos
+        }
+
+        return 0;
+    }
+
+    public static int Lexer_tokenBufferAppendChar(int c)
+    //func Lexer_tokenBufferAppendChar(c: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var pos = (int)default;
+        var strBuffer = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ strBuffer = Lexer_getTokenStrBuff_ptr(); // s_tokenStrBuff
+        /* set */ pos = Lexer_getTokenStrBuffPos(); // s_tokenStrBuff_pos
+
+        _ = memWrite8(_add(strBuffer, pos), c); // s_tokenStrBuff[pos] = c
+        /* set */ pos = _add(pos, 1); // pos++
+
+        if (__bool_check(_gte(pos, 256))) // max len 256 bytes
+        {
+            _ = printError($"The token strBuffer limit is {256} bytes");
+            goto END;
+        }
+
+        // Insert termination
+        _ = memWrite8(_add(strBuffer, pos), 0); // s_tokenStrBuff[pos] = '\0'
+
+        _ = memWrite(_add(g_offset, 124), pos); // update s_tokenStrBuff_pos
+
+    END:
+        // return cur len
+        return pos;
     }
 
     public static int IL_Emitter_initEmitter()
@@ -733,9 +1308,42 @@
             goto END;
         }
 
-        _ = IL_Emitter_finishEmitter();
+        /* set */ result = parseCompilationUnit();
+        if (__bool_check(_eq(result, 0)))
+        {
+            _ = printError("Failed to parse program");
+            goto END;
+        }
+        else
+        {
+            _ = printMessage("Program parsed successfully");
+            _ = IL_Emitter_finishEmitter();
+        }
 
     END:
+        return result;
+    }
+
+    public static int parseCompilationUnit()
+    //func parseCompilationUnit() -> Int
+    {
+        var result = (int)default;
+
+        /* set */ result = 1;
+
+        _ = skipUTF8BOMMark(); // Skips UTF8 BOM mark, if any
+
+        _ = consumeToken(); // Initialize m_curToken
+
+    #if false
+        while (getNextToken() < 21)
+        {
+            var str = System.Text.Encoding.UTF8.GetString(Program.s_RAM.AsSpan(200, 256));
+            str = str.Substring(0, str.IndexOf('\0'));
+            System.Console.WriteLine($"{getCurTokenType()} {str}");
+        }
+    #endif
+
         return result;
     }
 
@@ -753,6 +1361,13 @@
 
     public static int printError(string message)
     //func printError(message_ptr: Int) -> Int
+    {
+        System.Console.WriteLine(message);
+        return 0;
+    }
+
+    public static int printMessage(string message)
+    //func printMessage(message_ptr: Int) -> Int
     {
         System.Console.WriteLine(message);
         return 0;
