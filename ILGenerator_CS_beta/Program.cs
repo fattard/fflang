@@ -1114,7 +1114,7 @@ class Parser
                 case "__INT_WIDTH_BYTES__":
                     return new Token(TokenType.INTEGER_LITERAL, "4", m_line);
                 case "__INT_SIGN_BIT_MASK__":
-                    return new Token(TokenType.INTEGER_LITERAL, "2147483648", m_line);
+                    return new Token(TokenType.INTEGER_LITERAL, "-2147483648", m_line);
 
             }
 

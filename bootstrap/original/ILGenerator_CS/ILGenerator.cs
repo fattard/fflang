@@ -1,7 +1,85 @@
 ﻿internal partial class ILGenerator
 {
+    // === Offset allocation for global variables
+    //
+    // g_offset = 0
+    //
+    // & s_ramBinLength_MB                 := g_offset + 64
+    // & s_isDebugConfig                   := g_offset + 68
+    // & s_tmpBuff_ptr                     := g_offset + 72
+    //
+    // & s_curToken_type                   := g_offset + 120
+    // & s_curToken_value_ptr              := g_offset + 124
+    // & s_curToken_line                   := g_offset + 128
+    //
+    // & s_tokenStrBuff_ptr                := g_offset + 140
+    // & s_tokenStrBuff_pos                := g_offset + 144
+    //
+    // & s_srcCodeTxt_ptr                  := g_offset + 160
+    // & s_pos                             := g_offset + 164
+    // & s_line                            := g_offset + 168
+    // & s_lastValidLine                   := g_offset + 172
+    // & s_curScopeDepth                   := g_offset + 176
+    // & s_inFunctionScope                 := g_offset + 180
+    // & s_paramCount                      := g_offset + 184
+    // & s_ifLabelCounter                  := g_offset + 188
+    //
+    // & s_symbol_sizeof                   := g_offset + 192
+    // & s_symbol_field_size               := g_offset + 196
+    //
+    // & s_functionsTbl_ptr                := g_offset + 200
+    // & s_functionsTbl_count              := g_offset + 204
+    // & s_functionsTbl_names_ptr          := g_offset + 208
+    // & s_functionsTbl_names_offset       := g_offset + 212
+    // & s_functionScopeTbl_ptr            := g_offset + 216
+    // & s_functionScopeTbl_count          := g_offset + 220
+    // & s_functionScopeTbl_names_ptr      := g_offset + 224
+    // & s_functionScopeTbl_names_offset   := g_offset + 228
+    // & s_unresolvedGotoTbl_ptr           := g_offset + 232
+    // & s_unresolvedGotoTbl_count         := g_offset + 236
+    // & s_unresolvedGotoTbl_names_ptr     := g_offset + 240
+    // & s_unresolvedGotoTbl_names_offset  := g_offset + 244
+    // & s_typeNamesTbl_ptr                := g_offset + 248
+    // & s_typeNamesTbl_count              := g_offset + 252
+    // & s_typeNamesTbl_names_ptr          := g_offset + 256
+    // & s_typeNamesTbl_names_offset       := g_offset + 260
+    //
+    // & s_IL_Emitter_strBuffer_ptr        := g_offset + 280
+    // & s_IL_Emitter_strBuffer_pos        := g_offset + 284
+    // & s_IL_Emitter_baseILBeginTxt_ptr   := g_offset + 288
+    // & s_IL_Emitter_baseILEndTxt_ptr     := g_offset + 292
+    // & s_IL_Emitter_RuntimeJsonTxt_ptr   := g_offset + 296
+    //
+    //
+    // === Hardcoded pointers
+    //
+    // s_curToken_value_ptr                = g_offset + 320    (max len: 128 bytes)
+    // s_tokenStrBuff_ptr                  = g_offset + 448    (max len: 128 bytes)
+    // s_tmpBuff_ptr                       = g_offset + 576    (max len: 128 bytes)
+    //
+    // s_functionsTbl_ptr                  = g_offset + 2048   (max len: 16 KB)  ->  512 elements
+    // s_functionScopeTbl_ptr              = g_offset + 18432  (max len: 64 KB)  -> 2048 elements
+    // s_unresolvedGotoTbl_ptr             = g_offset + 83968  (max len: 16 KB)  ->  512 elements
+    // s_typeNamesTbl_ptr                  = g_offset + 100352 (max len:  1 KB)  ->   32 elements
+    //
+    // s_functionsTbl_names_ptr            = g_offset + 102400 (max len:  64 KB) ->  512 elements
+    // s_functionScopeTbl_names_ptr        = g_offset + 167936 (max len: 256 KB) -> 2048 elements
+    // s_unresolvedGotoTbl_names_ptr       = g_offset + 430080 (max len:  64 KB) ->  512 elements
+    // s_typeNamesTbl_names_ptr            = g_offset + 495616 (max len:   4 KB) ->   32 elements
+    //
+    // s_IL_Emitter_baseILBeginTxt_ptr     = g_offset + 499712 (max len: 10 KB)
+    // s_IL_Emitter_baseILEndTxt_ptr       = g_offset + 509952 (max len:  1 KB)
+    // s_IL_Emitter_RuntimeJsonTxt_ptr     = g_offset + 510976 (max len:  1 KB)
+    //
+    // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 128 KB) [input FFLang source]
+    //
+    // s_IL_Emitter_strBuffer_ptr          = g_offset + 655360 (max len: 256 KB) [output IL source]
+    //
+
 
     // ======== FFLang program
+
+    #region Helpers
 
     public static int _not(int a)
     //func _not(a: Int) -> Int
@@ -301,99 +379,118 @@
         return result;
     }
 
+    #endregion Helpers
 
-    // === Allocations for global variables
-    //
-    // g_offset = 0
-    //
-    // & s_IL_Emitter_strBuffer         := g_offset + 64
-    // & s_IL_Emitter_strBuffer_pos     := g_offset + 68
-    // & s_IL_Emitter_ifElseScopeCount  := g_offset + 72
-    // & s_IL_Emitter_baseILBegin_txt   := g_offset + 76
-    // & s_IL_Emitter_baseILEnd_txt     := g_offset + 80
-    // & s_IL_Emitter_RuntimeJson_txt   := g_offset + 84
-    //
-    // & s_tokenStrBuff                 := g_offset + 120
-    // & s_tokenStrBuff_pos             := g_offset + 124
-    //
-    // & s_curToken_type                := g_offset + 140
-    // & s_curToken_value               := g_offset + 144
-    // & s_curToken_line                := g_offset + 148
-    //
-    // & s_srcCodeTxt                   := g_offset + 160
-    // & s_pos                          := g_offset + 164
-    // & s_line                         := g_offset + 168
-    // & s_lastValidLine                := g_offset + 172
-    // & s_curScopeDepth                := g_offset + 176
-    // & s_inFunctionScope              := g_offset + 180
-    // & s_paramCount                   := g_offset + 184
-    //
-    //
-    //
-    // === Hardcoded pointers
-    //
-    // globals data arena               = g_offset          (max len: 32 KB)
-    //
-    // s_curToken_value                 = g_offset + 200    (max len: 256 bytes)
-    // s_tokenStrBuff                   = g_offset + 460    (max len: 256 bytes)
-    // s_tmpBuff                        = g_offset + 800    (max len: 256 bytes)
-    //
-    // s_IL_Emitter_baseILBegin_txt     = 32768             (max len: 8 KB)
-    // s_IL_Emitter_baseILEnd_txt       = 40960             (max len: 128 bytes)
-    // s_IL_Emitter_runtimeJson_txt     = 41088             (max len: 512 bytes)
-    // s_srcCodeTxt                     = 65536             (max len: 64 KB)
-    // s_IL_Emitter_strBuffer           = 131072            (max len: 64 KB)
-    //
+    #region Tmp Buffer
 
-    public static int initGlobals()
-    //func initGlobals() -> Int
+    public static int getTmpBuffer_ptr()
+    //func getTmpBuffer_ptr() -> Int
     {
         var g_offset = (int)default;
-
         /* set */ g_offset = 0;
 
-        // Clean globals data arena - 32 KB len
-        _ = memSet(g_offset, 0, 32768);
+        return memRead(_add(g_offset, 72)); // s_tmpBuff_ptr
+    }
 
-        // Write hardcoded pointers
-        _ = memWrite(_add(g_offset, 64), 131072); // s_IL_Emitter_strBuffer
-        _ = memWrite(_add(g_offset, 76), 32768); // s_IL_Emitter_baseILBegin_txt
-        _ = memWrite(_add(g_offset, 80), 40960); // s_IL_Emitter_baseILEnd_txt
-        _ = memWrite(_add(g_offset, 84), 41088); // s_IL_Emitter_runtimeJson_txt
-        _ = memWrite(_add(g_offset, 120), _add(g_offset, 460)); // s_tokenStrBuff
-        _ = memWrite(_add(g_offset, 144), _add(g_offset, 200)); // s_curToken_value
-        _ = memWrite(_add(g_offset, 160), 65536); // s_srcCodeTxt
+    #endregion Tmp Buffer
 
+    #region Token struct
 
-        // Clean s_IL_Emitter_strBuffer - 64 KB length
-        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 65536);
+    // ===== Token - value-type
+    //
+    // -- enum TokenType
+    //   IDENTIFIER         = 0
+    //   INTEGER_LITERAL    = 1
+    //
+    //   USING              = 2
+    //   FUNC               = 3
+    //   VAR                = 4
+    //   SET                = 5
+    //   IF                 = 6
+    //   ELSE               = 7
+    //   GOTO               = 8
+    //   RETURN             = 9
+    //
+    //   L_PAREN            = 10
+    //   R_PAREN            = 11
+    //   L_BRACE            = 12
+    //   R_BRACE            = 13
+    //   SEMICOLON          = 14
+    //   COLON              = 15
+    //   COMMA              = 16
+    //   EQUALS             = 17
+    //   UNDERSCORE         = 18
+    //   TRAILING_RETURN    = 19
+    //
+    //   BOOL_CHECK         = 20
+    //
+    //   EOF_TOKEN          = 21
+    //
+    //   UNKNOWN            = 100
+    // -------
+    //
+    // Token struct
+    //  - type: TokenType
+    //  - value: str_ptr
+    //  - line: Int
+    //
+    //
+
+    public static int getCurTokenType()
+    //func getCurTokenType() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 120)); // s_curToken_type
+    }
+
+    public static int getCurTokenValue_ptr()
+    //func getCurTokenValue_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 124)); // s_curToken_value_ptr
+    }
+
+    public static int getCurTokenLine()
+    //func getCurTokenLine() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 128)); // s_curToken_line
+    }
+
+    public static int setCurToken(int tokenType, int valueStr_ptr, int line)
+    //func setCurToken(tokenType: Int, valueStr_ptr: Int, line: Int) -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        _ = memWrite(_add(g_offset, 120), tokenType); // s_curToken_type = tokenType
+        _ = strCpy(valueStr_ptr, getCurTokenValue_ptr()); // s_curToken_value_ptr = valueStr_ptr
+        _ = memWrite(_add(g_offset, 128), line); // s_curToken_line = line
 
         return 0;
     }
 
-    public static int initParser()
-    //func initParser() -> Int
+    public static int matchTokenType(int tokenType)
+    //func matchTokenType(tokenType: Int) -> Int
     {
-        var g_offset = (int)default;
-
-        /* set */ g_offset = 0;
-
-        _ = memWrite(_add(g_offset, 140), 100); // s_curToken_type = TokenType.UNKNOWN
-        _ = memWrite(getCurTokenValue_ptr(), 0); // s_curToken_value[0] = '\0'
-        _ = memWrite(_add(g_offset, 148), 1); // s_curToken_line = 1
-
-        _ = memWrite(Lexer_getTokenStrBuff_ptr(), 0); // s_tokenStrBuff[0] = '\0'
-        _ = memWrite(_add(g_offset, 124), 0); // s_tokenStrBuff_pos = 0
-
-        _ = memWrite(_add(g_offset, 164), 0); // s_pos = 0
-        _ = memWrite(_add(g_offset, 168), 1); // s_line = 1
-        _ = memWrite(_add(g_offset, 172), 1); // s_lastValidLine = 1
-        _ = memWrite(_add(g_offset, 176), 0); // s_curScopeDepth = 0
-        _ = memWrite(_add(g_offset, 180), 0); // s_inFunctionScope = 0
-        _ = memWrite(_add(g_offset, 172), 0); // s_paramCount = 0
-
-        return 0;
+        return _eq(tokenType, getCurTokenType());
     }
+
+    public static int notMatchTokenType(int tokenType)
+    //func notMatchTokenType(tokenType: Int) -> Int
+    {
+        return _neq(tokenType, getCurTokenType());
+    }
+
+    #endregion Token struct
+
+    #region Lexer
 
     public static int Lexer_getTokenStrBuff_ptr()
     //func Lexer_getTokenStrBuff_ptr() -> Int
@@ -401,25 +498,55 @@
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        return memRead(_add(g_offset, 120)); // s_tokenStrBuff
+        return memRead(_add(g_offset, 140)); // s_tokenStrBuff_ptr
     }
 
-    public static int Lexer_getTokenStrBuffPos()
-    //func Lexer_getTokenStrBuffPos() -> Int
+    public static int Lexer_getTokenStrBuff_pos()
+    //func Lexer_getTokenStrBuff_pos() -> Int
     {
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        return memRead(_add(g_offset, 124)); // s_tokenStrBuff_pos
+        return memRead(_add(g_offset, 144)); // s_tokenStrBuff_pos
     }
 
-    public static int Lexer_resetTokenStrBuffPos()
-    //func Lexer_resetTokenStrBuffPos() -> Int
+    public static int Lexer_resetTokenStrBuff_pos()
+    //func Lexer_resetTokenStrBuff_pos() -> Int
     {
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        return memWrite(_add(g_offset, 124), 0); // s_tokenStrBuff_pos
+        return memWrite(_add(g_offset, 144), 0); // s_tokenStrBuff_pos
+    }
+
+    public static int Lexer_tokenBufferAppendChar(int c)
+    //func Lexer_tokenBufferAppendChar(c: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var pos = (int)default;
+        var strBuffer = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ strBuffer = Lexer_getTokenStrBuff_ptr(); // s_tokenStrBuff_ptr
+        /* set */ pos = Lexer_getTokenStrBuff_pos(); // s_tokenStrBuff_pos
+
+        if (__bool_check(_gte(pos, 128))) // max len 128 bytes
+        {
+            _ = printError($"The token strBuffer limit is {128} bytes");
+            goto END;
+        }
+
+        _ = memWrite8(_add(strBuffer, pos), c); // s_tokenStrBuff[pos] = c
+        /* set */ pos = _add(pos, 1); // pos++
+
+        // Insert termination
+        _ = memWrite8(_add(strBuffer, pos), 0); // s_tokenStrBuff[pos] = '\0'
+
+        _ = memWrite(_add(g_offset, 144), pos); // update s_tokenStrBuff_pos
+
+    END:
+        // return cur len
+        return pos;
     }
 
     public static int Lexer_getSrcCodeTxt_ptr()
@@ -428,7 +555,7 @@
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        return memRead(_add(g_offset, 160)); // s_srcCodeTxt
+        return memRead(_add(g_offset, 160)); // s_srcCodeTxt_ptr
     }
 
     public static int Lexer_getPos()
@@ -440,24 +567,6 @@
         return memRead(_add(g_offset, 164)); // s_pos
     }
 
-    public static int Lexer_getLine()
-    //func Lexer_getLine() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 168)); // s_line
-    }
-
-    public static int Lexer_getLastValidLine()
-    //func Lexer_getLastValidLine() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 172)); // s_lastValidLine
-    }
-
     public static int Lexer_incPos()
     //func Lexer_incPos() -> Int
     {
@@ -467,10 +576,19 @@
         /* set */ g_offset = 0;
 
         /* set */ pos = _add(memRead(_add(g_offset, 164)), 1); // s_pos + 1
-        _ = memWrite(_add(g_offset, 164), pos); // s_pos
+        _ = memWrite(_add(g_offset, 164), pos); // s_pos = s_pos + 1
 
         // returns incremented pos
         return pos;
+    }
+
+    public static int Lexer_getLine()
+    //func Lexer_getLine() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 168)); // s_line
     }
 
     public static int Lexer_incLine()
@@ -482,63 +600,24 @@
         /* set */ g_offset = 0;
 
         /* set */ line = _add(memRead(_add(g_offset, 168)), 1); // s_line + 1
-        _ = memWrite(_add(g_offset, 168), line); // s_line
+        _ = memWrite(_add(g_offset, 168), line); // s_line = s_line + 1
 
         // returns incremented line
         return line;
     }
 
-    public static int getCurTokenType()
-    //func getCurTokenType() -> Int
+    public static int Lexer_getLastValidLine()
+    //func Lexer_getLastValidLine() -> Int
     {
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        return memRead(_add(g_offset, 140)); // s_curToken_type
+        return memRead(_add(g_offset, 172)); // s_lastValidLine
     }
 
-    public static int getCurTokenValue_ptr()
-    //func getCurTokenValue_ptr() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
+    #endregion Lexer
 
-        return memRead(_add(g_offset, 144)); // s_curToken_value
-    }
-
-    public static int getCurTokenLine()
-    //func getCurTokenLine() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 148)); // s_curToken_line
-    }
-
-    public static int setCurToken(int type, int valueStr_ptr, int line)
-    //func setCurToken(type: Int, valueStr_ptr: Int, line: Int) -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        _ = memWrite(_add(g_offset, 140), type);
-        _ = memWrite(_add(g_offset, 148), line);
-        _ = strCpy(valueStr_ptr, getCurTokenValue_ptr());
-
-        return 0;
-    }
-
-    public static int matchTokenType(int type)
-    //func matchTokenType(type: Int) -> Int
-    {
-        return _eq(type, getCurTokenType());
-    }
-
-    public static int notMatchTokenType(int type)
-    //func notMatchTokenType(type: Int) -> Int
-    {
-        return _neq(type, getCurTokenType());
-    }
+    #region Parser fields
 
     public static int getCurScopeDepth()
     //func getCurScopeDepth() -> Int
@@ -558,7 +637,7 @@
         /* set */ g_offset = 0;
 
         /* set */ depth = _add(memRead(_add(g_offset, 176)), 1); // s_curScopeDepth + 1
-        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth
+        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth = s_curScopeDepth + 1
 
         // returns incremented curScopeDepth
         return depth;
@@ -573,7 +652,7 @@
         /* set */ g_offset = 0;
 
         /* set */ depth = _sub(memRead(_add(g_offset, 176)), 1); // s_curScopeDepth - 1
-        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth
+        _ = memWrite(_add(g_offset, 176), depth); // s_curScopeDepth = s_curScopeDepth - 1
 
         // returns decremented curScopeDepth
         return depth;
@@ -603,7 +682,7 @@
         var g_offset = (int)default;
         /* set */ g_offset = 0;
 
-        _ = memWrite(_add(g_offset, 184), count); // s_paramCount
+        _ = memWrite(_add(g_offset, 184), count); // s_paramCount = count
         return 0;
     }
 
@@ -616,26 +695,195 @@
         /* set */ g_offset = 0;
 
         /* set */ count = _add(memRead(_add(g_offset, 184)), 1); // s_paramCount + 1
-        _ = memWrite(_add(g_offset, 184), count); // s_paramCount
+        _ = memWrite(_add(g_offset, 184), count); // s_paramCount = s_paramCount + 1
 
         // returns incremented paramCount
         return count;
     }
 
+    public static int getIfLabelCounter(int count)
+    //func getIfLabelCounter(count: Int) -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 188)); // s_ifLabelCounter
+    }
+
+    public static int resetIfLabelCounter()
+    //func resetIfLabelCounter() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        _ = memWrite(_add(g_offset, 188), 0); // s_ifLabelCounter
+        return 0;
+    }
+
+    public static int incIfLabelCounter()
+    //func incIfLabelCounter() -> Int
+    {
+        var g_offset = (int)default;
+        var count = (int)default;
+
+        /* set */ g_offset = 0;
+
+        /* set */ count = _add(memRead(_add(g_offset, 188)), 1); // s_ifLabelCounter + 1
+        _ = memWrite(_add(g_offset, 188), count); // s_ifLabelCounter = s_ifLabelCounter + 1
+
+        // returns incremented ifLabelCounter
+        return count;
+    }
+
+    #endregion Parser fields
+
+    #region Const Strings
+
+    public static int getTypeName_Int()
+    //func getTypeName_Int() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff, 0),  73); // 'I'
+        _ = memWrite8(_add(tmpBuff, 1), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getMacroName_int_max()
+    //func getMacroName_int_max() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
+        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  6), 77); // 'M'
+        _ = memWrite8(_add(tmpBuff,  7), 65); // 'A'
+        _ = memWrite8(_add(tmpBuff,  8), 88); // 'X'
+        _ = memWrite8(_add(tmpBuff,  9), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 10), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 11),  0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getMacroName_int_width_bits()
+    //func getMacroName_int_width_bits() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
+        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  6), 87); // 'W'
+        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  8), 68); // 'D'
+        _ = memWrite8(_add(tmpBuff,  9), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff, 10), 72); // 'H'
+        _ = memWrite8(_add(tmpBuff, 11), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 12), 66); // 'B'
+        _ = memWrite8(_add(tmpBuff, 13), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff, 14), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff, 15), 83); // 'S'
+        _ = memWrite8(_add(tmpBuff, 16), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 17), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 18),  0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getMacroName_int_width_bytes()
+    //func getMacroName_int_width_bytes() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
+        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  6), 87); // 'W'
+        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  8), 68); // 'D'
+        _ = memWrite8(_add(tmpBuff,  9), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff, 10), 72); // 'H'
+        _ = memWrite8(_add(tmpBuff, 11), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 12), 66); // 'B'
+        _ = memWrite8(_add(tmpBuff, 13), 89); // 'Y'
+        _ = memWrite8(_add(tmpBuff, 14), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff, 15), 69); // 'E'
+        _ = memWrite8(_add(tmpBuff, 16), 83); // 'S'
+        _ = memWrite8(_add(tmpBuff, 17), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 18), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 19),  0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getMacroName_int_sign_bit_mask()
+    //func getMacroName_int_sign_bit_mask() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
+        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
+        _ = memWrite8(_add(tmpBuff,  6), 83); // 'S'
+        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff,  8), 71); // 'G'
+        _ = memWrite8(_add(tmpBuff,  9), 78); // 'N'
+        _ = memWrite8(_add(tmpBuff, 10), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 11), 66); // 'B'
+        _ = memWrite8(_add(tmpBuff, 12), 73); // 'I'
+        _ = memWrite8(_add(tmpBuff, 13), 84); // 'T'
+        _ = memWrite8(_add(tmpBuff, 14), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 15), 77); // 'M'
+        _ = memWrite8(_add(tmpBuff, 16), 65); // 'A'
+        _ = memWrite8(_add(tmpBuff, 17), 83); // 'S'
+        _ = memWrite8(_add(tmpBuff, 18), 75); // 'K'
+        _ = memWrite8(_add(tmpBuff, 19), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 20), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 21),  0); // '\0'
+
+        return tmpBuff;
+    }
+
     public static int getKeyword_using()
     //func getKeyword_using() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 117); // 'u'
-        _ = memWrite(_add(tmpBuff, 1), 115); // 's'
-        _ = memWrite(_add(tmpBuff, 2), 105); // 'i'
-        _ = memWrite(_add(tmpBuff, 3), 110); // 'n'
-        _ = memWrite(_add(tmpBuff, 4), 103); // 'g'
-        _ = memWrite(_add(tmpBuff, 5),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff, 1), 115); // 's'
+        _ = memWrite8(_add(tmpBuff, 2), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 3), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 4), 103); // 'g'
+        _ = memWrite8(_add(tmpBuff, 5),   0); // '\0'
 
         return tmpBuff;
     }
@@ -643,16 +891,15 @@
     public static int getKeyword_func()
     //func getKeyword_func() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 102); // 'f'
-        _ = memWrite(_add(tmpBuff, 1), 117); // 'u'
-        _ = memWrite(_add(tmpBuff, 2), 110); // 'n'
-        _ = memWrite(_add(tmpBuff, 3),  99); // 'c'
-        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 102); // 'f'
+        _ = memWrite8(_add(tmpBuff, 1), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff, 2), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 3),  99); // 'c'
+        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
 
         return tmpBuff;
     }
@@ -660,15 +907,14 @@
     public static int getKeyword_var()
     //func getKeyword_var() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 118); // 'v'
-        _ = memWrite(_add(tmpBuff, 1),  97); // 'a'
-        _ = memWrite(_add(tmpBuff, 2), 114); // 'r'
-        _ = memWrite(_add(tmpBuff, 3),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 118); // 'v'
+        _ = memWrite8(_add(tmpBuff, 1),  97); // 'a'
+        _ = memWrite8(_add(tmpBuff, 2), 114); // 'r'
+        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
 
         return tmpBuff;
     }
@@ -676,15 +922,14 @@
     public static int getKeyword_set()
     //func getKeyword_set() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 115); // 's'
-        _ = memWrite(_add(tmpBuff, 1), 101); // 'e'
-        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite(_add(tmpBuff, 3),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 115); // 's'
+        _ = memWrite8(_add(tmpBuff, 1), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
 
         return tmpBuff;
     }
@@ -692,18 +937,17 @@
     public static int getKeyword_return()
     //func getKeyword_return() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 114); // 'r'
-        _ = memWrite(_add(tmpBuff, 1), 101); // 'e'
-        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite(_add(tmpBuff, 3), 117); // 'u'
-        _ = memWrite(_add(tmpBuff, 4), 114); // 'r'
-        _ = memWrite(_add(tmpBuff, 5), 110); // 'n'
-        _ = memWrite(_add(tmpBuff, 6),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 114); // 'r'
+        _ = memWrite8(_add(tmpBuff, 1), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 3), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff, 4), 114); // 'r'
+        _ = memWrite8(_add(tmpBuff, 5), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 6),   0); // '\0'
 
         return tmpBuff;
     }
@@ -711,16 +955,15 @@
     public static int getKeyword_goto()
     //func getKeyword_goto() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 103); // 'g'
-        _ = memWrite(_add(tmpBuff, 1), 111); // 'o'
-        _ = memWrite(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite(_add(tmpBuff, 3), 111); // 'o'
-        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 103); // 'g'
+        _ = memWrite8(_add(tmpBuff, 1), 111); // 'o'
+        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 3), 111); // 'o'
+        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
 
         return tmpBuff;
     }
@@ -728,14 +971,13 @@
     public static int getKeyword_if()
     //func getKeyword_if() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 105); // 'i'
-        _ = memWrite(_add(tmpBuff, 1), 102); // 'f'
-        _ = memWrite(_add(tmpBuff, 2),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 1), 102); // 'f'
+        _ = memWrite8(_add(tmpBuff, 2),   0); // '\0'
 
         return tmpBuff;
     }
@@ -743,16 +985,15 @@
     public static int getKeyword_else()
     //func getKeyword_else() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 101); // 'e'
-        _ = memWrite(_add(tmpBuff, 1), 108); // 'l'
-        _ = memWrite(_add(tmpBuff, 2), 115); // 's'
-        _ = memWrite(_add(tmpBuff, 3), 101); // 'e'
-        _ = memWrite(_add(tmpBuff, 4),   0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 1), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff, 2), 115); // 's'
+        _ = memWrite8(_add(tmpBuff, 3), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
 
         return tmpBuff;
     }
@@ -760,41 +1001,1541 @@
     public static int getKeyword_underscoreSymbol()
     //func getKeyword_underscoreSymbol() -> Int
     {
-        var g_offset = (int)default;
         var tmpBuff = (int)default;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
+        /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        _ = memWrite(_add(tmpBuff, 0), 95); // '_'
-        _ = memWrite(_add(tmpBuff, 1),  0); // '\0'
+        _ = memWrite8(_add(tmpBuff, 0), 95); // '_'
+        _ = memWrite8(_add(tmpBuff, 1),  0); // '\0'
 
         return tmpBuff;
     }
 
-    public static int getKeyword_boolCheck()
-    //func getKeyword_boolCheck() -> Int
+    public static int getBuiltin_boolCheck()
+    //func getBuiltin_boolCheck() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff,  3), 111); // 'o'
+        _ = memWrite8(_add(tmpBuff,  4), 111); // 'o'
+        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff,  6),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  7),  99); // 'c'
+        _ = memWrite8(_add(tmpBuff,  8), 104); // 'h'
+        _ = memWrite8(_add(tmpBuff,  9), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 10),  99); // 'c'
+        _ = memWrite8(_add(tmpBuff, 11), 107); // 'k'
+        _ = memWrite8(_add(tmpBuff, 12),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getBuiltin_dbg_int()
+    //func getBuiltin_dbg_int() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff, 0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 2), 100); // 'd'
+        _ = memWrite8(_add(tmpBuff, 3),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff, 4), 103); // 'g'
+        _ = memWrite8(_add(tmpBuff, 5),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 6), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 7), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 8), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 9),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getBuiltin_add()
+    //func getBuiltin_add() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
+        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 14),  97); // 'a'
+        _ = memWrite8(_add(tmpBuff, 15), 100); // 'd'
+        _ = memWrite8(_add(tmpBuff, 16), 100); // 'd'
+        _ = memWrite8(_add(tmpBuff, 17),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getBuiltin_nand()
+    //func getBuiltin_nand() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
+        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 14), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 15),  97); // 'a'
+        _ = memWrite8(_add(tmpBuff, 16), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 17), 100); // 'd'
+        _ = memWrite8(_add(tmpBuff, 18),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getBuiltin_mem_read()
+    //func getBuiltin_mem_read() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
+        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 14), 109); // 'm'
+        _ = memWrite8(_add(tmpBuff, 15), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 16), 109); // 'm'
+        _ = memWrite8(_add(tmpBuff, 17),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 18), 114); // 'r'
+        _ = memWrite8(_add(tmpBuff, 19), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 20),  97); // 'a'
+        _ = memWrite8(_add(tmpBuff, 21), 100); // 'd'
+        _ = memWrite8(_add(tmpBuff, 22),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int getBuiltin_mem_write()
+    //func getBuiltin_mem_write() -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
+        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
+        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
+        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
+        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
+        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
+        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 14), 109); // 'm'
+        _ = memWrite8(_add(tmpBuff, 15), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 16), 109); // 'm'
+        _ = memWrite8(_add(tmpBuff, 17),  95); // '_'
+        _ = memWrite8(_add(tmpBuff, 18), 119); // 'w'
+        _ = memWrite8(_add(tmpBuff, 19), 114); // 'r'
+        _ = memWrite8(_add(tmpBuff, 20), 105); // 'i'
+        _ = memWrite8(_add(tmpBuff, 21), 116); // 't'
+        _ = memWrite8(_add(tmpBuff, 22), 101); // 'e'
+        _ = memWrite8(_add(tmpBuff, 23),   0); // '\0'
+
+        return tmpBuff;
+    }
+
+    public static int replaceMacro_int_width_bytes(int dest_ptr)
+    //func replaceMacro_int_width_bytes(dest_ptr: Int) -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  1),  0); // '\0'
+
+        _ = strCpy(tmpBuff, dest_ptr);
+
+        return 0;
+    }
+
+    public static int replaceMacro_int_width_bits(int dest_ptr)
+    //func replaceMacro_int_width_bits(dest_ptr: Int) -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 51); // '3'
+        _ = memWrite8(_add(tmpBuff,  1), 50); // '2'
+        _ = memWrite8(_add(tmpBuff,  2),  0); // '\0'
+
+        _ = strCpy(tmpBuff, dest_ptr);
+
+        return 0;
+    }
+
+    public static int replaceMacro_int_max(int dest_ptr)
+    //func replaceMacro_int_max(dest_ptr: Int) -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 50); // '2'
+        _ = memWrite8(_add(tmpBuff,  1), 49); // '1'
+        _ = memWrite8(_add(tmpBuff,  2), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  3), 55); // '7'
+        _ = memWrite8(_add(tmpBuff,  4), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  5), 56); // '8'
+        _ = memWrite8(_add(tmpBuff,  6), 51); // '3'
+        _ = memWrite8(_add(tmpBuff,  7), 54); // '6'
+        _ = memWrite8(_add(tmpBuff,  8), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  9), 55); // '7'
+        _ = memWrite8(_add(tmpBuff, 10),  0); // '\0'
+
+        _ = strCpy(tmpBuff, dest_ptr);
+
+        return 0;
+    }
+
+    public static int replaceMacro_int_sign_bit_mask(int dest_ptr)
+    //func replaceMacro_int_sign_bit_mask(dest_ptr: Int) -> Int
+    {
+        var tmpBuff = (int)default;
+
+        /* set */ tmpBuff = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(tmpBuff,  0), 45); // '-'
+        _ = memWrite8(_add(tmpBuff,  1), 50); // '2'
+        _ = memWrite8(_add(tmpBuff,  2), 49); // '1'
+        _ = memWrite8(_add(tmpBuff,  3), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  4), 55); // '7'
+        _ = memWrite8(_add(tmpBuff,  5), 52); // '4'
+        _ = memWrite8(_add(tmpBuff,  6), 56); // '8'
+        _ = memWrite8(_add(tmpBuff,  7), 51); // '3'
+        _ = memWrite8(_add(tmpBuff,  8), 54); // '6'
+        _ = memWrite8(_add(tmpBuff,  9), 52); // '4'
+        _ = memWrite8(_add(tmpBuff, 10), 56); // '8'
+        _ = memWrite8(_add(tmpBuff, 11),  0); // '\0'
+
+        _ = strCpy(tmpBuff, dest_ptr);
+
+        return 0;
+    }
+
+    #endregion Const Strings
+
+    #region Symbols
+
+    // ===== Symbol - value-type
+    //
+    // -- enum SymbolType
+    //   FUNCTION           = 0
+    //   ARGUMENT_VARIABLE  = 1
+    //   LOCAL_VARIABLE     = 2
+    //   LABEL              = 3
+    //   TYPE_NAME          = 4
+    //
+    //   UNDEFINED          = 100
+    // -------
+    //
+    // Symbol struct
+    //  - identifierStr_ptr: str_ptr
+    //  - symbolType: SymbolType
+    //  - definitionLine: Int
+    //  - scopeDepth: Int
+    //  - paramCount: Int
+    //  - definitionFound: Int (1 or 0)
+    //  - wasReferenced: Int (1 or 0)
+    //  - address: Int (-unused-)
+    //
+
+    public static int symbol_sizeOf()
+    //func symbol_sizeOf() -> Int
     {
         var g_offset = (int)default;
-        var tmpBuff = (int)default;
+        /* set */ g_offset = 0;
 
-        /* set */ tmpBuff = _add(g_offset, 800);
-
-        _ = memWrite(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite(_add(tmpBuff,  3), 111); // 'o'
-        _ = memWrite(_add(tmpBuff,  4), 111); // 'o'
-        _ = memWrite(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite(_add(tmpBuff,  6),  95); // '_'
-        _ = memWrite(_add(tmpBuff,  7),  99); // 'c'
-        _ = memWrite(_add(tmpBuff,  8), 104); // 'h'
-        _ = memWrite(_add(tmpBuff,  9), 101); // 'e'
-        _ = memWrite(_add(tmpBuff, 10),  99); // 'c'
-        _ = memWrite(_add(tmpBuff, 11), 107); // 'k'
-        _ = memWrite(_add(tmpBuff, 12),   0); // '\0'
-
-        return tmpBuff;
+        return memRead(_add(g_offset, 192)); // s_symbol_sizeof
     }
+
+    public static int symbol_fieldSize()
+    //func symbol_fieldSize() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 196)); // s_symbol_field_size
+    }
+
+    public static int symbol_getField_ptr(int _self, int fieldIdx)
+    //func symbol_getField_ptr(_self: Int, fieldIdx: Int) -> Int
+    {
+        return _add(_self, _mul(symbol_fieldSize(), fieldIdx));
+    }
+
+    public static int makeSymbol(int destTblSlot_ptr, int identifierStr_ptr, int symbolType, int scopeDepth, int definitionLine)
+    //func makeSymbol(destTblSlot_ptr: Int,identifierStr_ptr: Int,symbolType: Int,scopeDepth: Int,definitionLine: Int) -> Int
+    {
+        var offset = (int)default;
+        var fieldSize = (int)default;
+
+        /* set */ fieldSize = symbol_fieldSize();
+
+        _ = memWrite(_add(destTblSlot_ptr, offset), identifierStr_ptr); // self.identifierStr_ptr
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), symbolType); // self.symbolType
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), definitionLine); // self.definitionLine
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), scopeDepth); // self.scopeDepth
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), 0); // self.paramCount
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), 0); // self.definitionFound
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), 0); // self.wasReferenced
+        /* set */ offset = _add(offset, fieldSize);
+        _ = memWrite(_add(destTblSlot_ptr, offset), 0); // self.address [unused in IL]
+
+        return 0;
+    }
+
+    public static int getFunctionTbl_ptr()
+    //func getFunctionTbl_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 200)); // s_functionsTbl_ptr
+    }
+
+    public static int getFunctionTbl_count()
+    //func getFunctionTbl_count() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 204)); // s_functionsTbl_count
+    }
+
+    public static int getFunctionTbl_names_ptr()
+    //func getFunctionTbl_names_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 208)); // s_functionsTbl_names_ptr
+    }
+
+    public static int getFunctionTbl_names_offset()
+    //func getFunctionTbl_names_offset() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 212)); // s_functionsTbl_names_offset
+    }
+
+    public static int getFunctionScopeTbl_ptr()
+    //func getFunctionScopeTbl_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 216)); // s_functionScopeTbl_ptr
+    }
+
+    public static int getFunctionScopeTbl_count()
+    //func getFunctionScopeTbl_count() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 220)); // s_functionScopeTbl_count
+    }
+
+    public static int getFunctionScopeTbl_names_ptr()
+    //func getFunctionScopeTbl_names_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 224)); // s_functionScopeTbl_names_ptr
+    }
+
+    public static int getFunctionScopeTbl_names_offset()
+    //func getFunctionScopeTbl_names_offset() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 228)); // s_functionScopeTbl_names_offset
+    }
+
+    public static int getUnresolvedGotoTbl_ptr()
+    //func getUnresolvedGotoTbl_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 232)); // s_unresolvedGotoTbl_ptr
+    }
+
+    public static int getUnresolvedGotoTbl_count()
+    //func getUnresolvedGotoTbl_count() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 236)); // s_unresolvedGotoTbl_count
+    }
+
+    public static int getUnresolvedGotoTbl_names_ptr()
+    //func getUnresolvedGotoTbl_names_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 240)); // s_unresolvedGotoTbl_names_ptr
+    }
+
+    public static int getUnresolvedGotoTbl_names_offset()
+    //func getUnresolvedGotoTbl_names_offset() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 244)); // s_unresolvedGotoTbl_names_offset
+    }
+
+    public static int getTypeNamesTbl_ptr()
+    //func getTypeNamesTbl_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 248)); // s_typeNamesTbl_ptr
+    }
+
+    public static int getTypeNamesTbl_count()
+    //func getTypeNamesTbl_count() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 252)); // s_typeNamesTbl_count
+    }
+
+    public static int getTypeNamesTbl_names_ptr()
+    //func getTypeNamesTbl_names_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 256)); // s_typeNamesTbl_names_ptr
+    }
+
+    public static int getTypeNamesTbl_names_offset()
+    //func getTypeNamesTbl_names_offset() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 260)); // s_typeNamesTbl_names_offset
+    }
+
+    public static int allocateFunctionSymbolStr(int identifierStr_ptr)
+    //func allocateFunctionSymbolStr(identifierStr_ptr: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var str_base = (int)default;
+        var str_offset = (int)default;
+        var str_dest = (int)default;
+        var str_len = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ str_base = getFunctionTbl_names_ptr();
+        /* set */ str_offset = getFunctionTbl_names_offset();
+        /* set */ str_dest = _add(str_base, str_offset);
+
+        /* set */ str_len = strCpy(identifierStr_ptr, str_dest);
+        _ = memWrite(_add(g_offset, 212), _add(str_offset, str_len)); // update s_functionsTbl_names_offset
+
+        // returns the ptr offset of the allocated string
+        return str_dest;
+    }
+
+    public static int insertFunctionSymbol(int identifierStr_ptr)
+    //func insertFunctionSymbol(identifierStr_ptr: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+        /* set */ result = 1;
+
+        if (__bool_check(_gte(count, 512)))
+        {
+            _ = printError($"Reached limit of function symbols: {512}");
+            /* set */ result = 0;
+            goto END;
+        }
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto INSERT_SYMBOL;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            // s_inFunctionScope && symbol.definitionFound
+            if (__bool_check(_and(isInFunctionScope(), memRead(symbol_getField_ptr(slotOffset, 5)))))
+            {
+                _ = printError($"Duplicate definition for function '{Program.ReadString(identifierStr_ptr, 128)}' at line {Lexer_getLastValidLine()}");
+                _ = printError($"First definition: line {memRead(symbol_getField_ptr(slotOffset, 2))}"); // symbol.definitionLine
+            }
+
+            /* set */ result = 0;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    INSERT_SYMBOL:
+        _ = makeSymbol(slotOffset, allocateFunctionSymbolStr(identifierStr_ptr), 0, 0, 0);
+        _ = memWrite(_add(g_offset, 204), _add(count, 1)); // s_functionsTbl_count++
+
+    END:
+        return result;
+    }
+
+    public static int containsFunctionSymbol(int identifierStr_ptr)
+    //func containsFunctionSymbol(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = 1;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int markFunctionSymbolDefinitionFound(int identifierStr_ptr, int definitionLine)
+    //func markFunctionSymbolDefinitionFound(identifierStr_ptr: Int, definitionLine: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = memWrite(symbol_getField_ptr(slotOffset, 5), 1); // symbol.definitionFound = 1
+            _ = memWrite(symbol_getField_ptr(slotOffset, 2), definitionLine); // symbol.definitionLine = definitionLine
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return 0;
+    }
+
+    public static int markFunctionSymbolAsReferenced(int identifierStr_ptr, int referencedLine)
+    //func markFunctionSymbolAsReferenced(identifierStr_ptr: Int, referencedLine: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            // !symbol.definitionFound && !symbol.wasReferenced
+            if (__bool_check(_and(_neq(memRead(symbol_getField_ptr(slotOffset, 5)), 1), _neq(memRead(symbol_getField_ptr(slotOffset, 6)), 1))))
+            {
+                _ = memWrite(symbol_getField_ptr(slotOffset, 6), 1); // symbol.wasReferenced = 1
+                _ = memWrite(symbol_getField_ptr(slotOffset, 2), referencedLine); // symbol.definitionLine = referencedLine
+            }
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return 0;
+    }
+
+    public static int isFunctionSymbolDefinitionFound(int identifierStr_ptr)
+    //func isFunctionSymbolDefinitionFound(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = memRead(symbol_getField_ptr(slotOffset, 5)); // result = symbol.definitionFound
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int updateFunctionSymbolParamCount(int identifierStr_ptr, int paramCount)
+    //func updateFunctionSymbolParamCount(identifierStr_ptr: Int, paramCount: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = memWrite(symbol_getField_ptr(slotOffset, 4), paramCount); // symbol.paramCount = paramCount
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return 0;
+    }
+
+    public static int matchFunctionSymbolParamCount(int identifierStr_ptr, int paramCount)
+    //func matchFunctionSymbolParamCount(identifierStr_ptr: Int, paramCount: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionTbl_ptr = (int)default;
+        var result = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            if (__bool_check(_eq(memRead(symbol_getField_ptr(slotOffset, 4)), paramCount)))
+            {
+                /* set */ result = 1;
+            }
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int anyReferencedFunctionNotDefined()
+    //func anyReferencedFunctionNotDefined() -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionTbl_ptr = (int)default;
+
+        /* set */ functionTbl_ptr = getFunctionTbl_ptr();
+        /* set */ count = getFunctionTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        // symbol.wasReferenced && !symbol.definitionFound
+        if (__bool_check(_and(_eq(memRead(symbol_getField_ptr(slotOffset, 6)), 1), _neq(memRead(symbol_getField_ptr(slotOffset, 5)), 1))))
+        {
+            _ = printError($"Unresolved reference of undefined function '{Program.ReadString(slotOffset, 128)}' at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
+            /* set */ result = 1;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int isMainFunctionValid()
+    //func isMainFunctionValid() -> Int
+    {
+        var mainName = (int)default;
+        var result = (int)default;
+
+        /* set */ mainName = getTmpBuffer_ptr();
+
+        _ = memWrite8(_add(mainName, 0), 109); // 'm'
+        _ = memWrite8(_add(mainName, 1),  97); // 'a'
+        _ = memWrite8(_add(mainName, 2), 105); // 'i'
+        _ = memWrite8(_add(mainName, 3), 110); // 'n'
+        _ = memWrite8(_add(mainName, 4),   0); // '\0'
+
+        if (__bool_check(_and(_and(containsFunctionSymbol(mainName), matchFunctionSymbolParamCount(mainName, 0)), isFunctionSymbolDefinitionFound(mainName))))
+        {
+            /* set */ result = 1;
+        }
+
+        return result;
+    }
+
+    public static int allocateFunctionScopeSymbolStr(int identifierStr_ptr)
+    //func allocateFunctionScopeSymbolStr(identifierStr_ptr: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var str_base = (int)default;
+        var str_offset = (int)default;
+        var str_dest = (int)default;
+        var str_len = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ str_base = getFunctionScopeTbl_names_ptr();
+        /* set */ str_offset = getFunctionScopeTbl_names_offset();
+        /* set */ str_dest = _add(str_base, str_offset);
+
+        /* set */ str_len = strCpy(identifierStr_ptr, str_dest);
+        _ = memWrite(_add(g_offset, 228), _add(str_offset, str_len)); // update s_functionScopeTbl_names_offset
+
+        // returns the ptr offset of the allocated string
+        return str_dest;
+    }
+
+    public static int resetFunctionScope()
+    //func resetFunctionScope() -> Int
+    {
+        var g_offset = (int)default;
+
+        /* set */ g_offset = 0;
+
+        _ = memWrite(_add(g_offset, 220), 0); // s_functionScopeTbl_count = 0
+        _ = memWrite(_add(g_offset, 236), 0); // s_unresolvedGotoTbl_count = 0
+        _ = memWrite(_add(g_offset, 176), 0); // s_curScopeDepth = 0
+        _ = resetIfLabelCounter();
+
+        return 0;
+    }
+
+    public static int insertFunctionScopeSymbol(int identifierStr_ptr, int symbolType, int scopeDepth, int definitionLine)
+    //func insertFunctionScopeSymbol(identifierStr_ptr: Int, symbolType: Int, scopeDepth: Int, definitionLine: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+        /* set */ result = 1;
+
+        if (__bool_check(_gte(count, 2048)))
+        {
+            _ = printError($"Reached limit of function scope symbols: {2048}");
+            /* set */ result = 0;
+            goto END;
+        }
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto INSERT_SYMBOL;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = printError($"Duplicate definition for '{Program.ReadString(identifierStr_ptr, 128)}' at line {Lexer_getLastValidLine()}");
+            _ = printError($"First definition: line {memRead(symbol_getField_ptr(slotOffset, 2))}"); // symbol.definitionLine
+
+            /* set */ result = 0;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    INSERT_SYMBOL:
+        _ = makeSymbol(slotOffset, allocateFunctionScopeSymbolStr(identifierStr_ptr), symbolType, scopeDepth, definitionLine);
+        _ = memWrite(_add(g_offset, 220), _add(count, 1)); // update s_functionScopeTbl_count
+
+    END:
+        return result;
+    }
+
+    public static int containsFunctionScopeSymbol(int identifierStr_ptr)
+    //func containsFunctionScopeSymbol(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = 1;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int updateFunctionScopeSymbolScopeDepth(int identifierStr_ptr, int scopeDepth)
+    //func updateFunctionScopeSymbolScopeDepth(identifierStr_ptr: Int, scopeDepth: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = memWrite(symbol_getField_ptr(slotOffset, 3), scopeDepth); // symbol.scopeDepth = scopeDepth
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return 0;
+    }
+
+    public static int markFunctionScopeSymbolDefinitionFound(int identifierStr_ptr, int definitionLine)
+    //func markFunctionScopeSymbolDefinitionFound(identifierStr_ptr: Int, definitionLine: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = memWrite(symbol_getField_ptr(slotOffset, 5), 1); // symbol.definitionFound = 1
+            _ = memWrite(symbol_getField_ptr(slotOffset, 2), definitionLine); // symbol.definitionLine = definitionLine
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return 0;
+    }
+
+    public static int isFunctionScopeSymbolDefinitionFound(int identifierStr_ptr)
+    //func isFunctionScopeSymbolDefinitionFound(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = memRead(symbol_getField_ptr(slotOffset, 5)); // result = symbol.definitionFound
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int matchFunctionScopeSymbolType(int identifierStr_ptr, int symbolType)
+    //func matchFunctionScopeSymbolType(identifierStr_ptr: Int, symbolType: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            if (__bool_check(_eq(memRead(symbol_getField_ptr(slotOffset, 1)), symbolType)))
+            {
+                /* set */ result = 1;
+            }
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int getFunctionScopeSymbol_ptr(int identifierStr_ptr)
+    //func getFunctionScopeSymbol_ptr(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var functionScopeTbl_ptr = (int)default;
+
+        /* set */ functionScopeTbl_ptr = getFunctionScopeTbl_ptr();
+        /* set */ count = getFunctionScopeTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(functionScopeTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = slotOffset;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int allocateUnresolvedGotoSymbolStr(int identifierStr_ptr)
+    //func allocateUnresolvedGotoSymbolStr(identifierStr_ptr: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var str_base = (int)default;
+        var str_offset = (int)default;
+        var str_dest = (int)default;
+        var str_len = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ str_base = getUnresolvedGotoTbl_names_ptr();
+        /* set */ str_offset = getUnresolvedGotoTbl_names_offset();
+        /* set */ str_dest = _add(str_base, str_offset);
+
+        /* set */ str_len = strCpy(identifierStr_ptr, str_dest);
+        _ = memWrite(_add(g_offset, 244), _add(str_offset, str_len)); // update s_unresolvedGotoTbl_names_offset
+
+        // returns the ptr offset of the allocated string
+        return str_dest;
+    }
+
+    public static int insertUnresolvedGotoSymbol(int identifierStr_ptr, int scopeDepth, int definitionLine)
+    //func insertUnresolvedGotoSymbol(identifierStr_ptr: Int, scopeDepth: Int, definitionLine: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var unresolvedGotoTbl_ptr = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ unresolvedGotoTbl_ptr = getUnresolvedGotoTbl_ptr();
+        /* set */ count = getUnresolvedGotoTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+        /* set */ result = 1;
+
+        if (__bool_check(_gte(count, 512)))
+        {
+            _ = printError($"Reached limit of unresolved goto symbols: {512}");
+            /* set */ result = 0;
+            goto END;
+        }
+
+        /* set */ slotOffset = _add(unresolvedGotoTbl_ptr, _mul(count, symbolSize));
+
+        _ = makeSymbol(slotOffset, allocateUnresolvedGotoSymbolStr(identifierStr_ptr), 3, scopeDepth, definitionLine);
+        _ = memWrite(_add(g_offset, 236), _add(count, 1)); // update s_unresolvedGotoTbl_count
+
+    END:
+        return result;
+    }
+
+    public static int anyUnresolvedGoto()
+    //func anyUnresolvedGoto() -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var unresolvedGotoTbl_ptr = (int)default;
+
+        /* set */ unresolvedGotoTbl_ptr = getUnresolvedGotoTbl_ptr();
+        /* set */ count = getUnresolvedGotoTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(unresolvedGotoTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(_neq(containsFunctionScopeSymbol(slotOffset), 1)))
+        {
+            _ = printError($"Use of undefined label symbol '{Program.ReadString(slotOffset, 128)}' at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
+            /* set */ result = 1;
+            goto END;
+        }
+
+        if (__bool_check(_gt(memRead(symbol_getField_ptr(getFunctionScopeSymbol_ptr(slotOffset),2)) ,memRead(symbol_getField_ptr(slotOffset, 2)))))
+        {
+            _ = printError($"Label '{Program.ReadString(slotOffset, 128)}' is not available at current scope at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
+            /* set */ result = 1;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int allocateTypeNameSymbolStr(int identifierStr_ptr)
+    //func allocateTypeNameSymbolStr(identifierStr_ptr: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var str_base = (int)default;
+        var str_offset = (int)default;
+        var str_dest = (int)default;
+        var str_len = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ str_base = getTypeNamesTbl_names_ptr();
+        /* set */ str_offset = getTypeNamesTbl_names_offset();
+        /* set */ str_dest = _add(str_base, str_offset);
+
+        /* set */ str_len = strCpy(identifierStr_ptr, str_dest);
+        _ = memWrite(_add(g_offset, 260), _add(str_offset, str_len)); // update s_typeNamesTbl_names_offset
+
+        // returns the ptr offset of the allocated string
+        return str_dest;
+    }
+
+    public static int insertTypeNameSymbol(int identifierStr_ptr, int definitionLine)
+    //func insertTypeNameSymbol(identifierStr_ptr: Int, definitionLine: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var typeNamesTbl_ptr = (int)default;
+
+        /* set */ g_offset = 0;
+        /* set */ typeNamesTbl_ptr = getTypeNamesTbl_ptr();
+        /* set */ count = getTypeNamesTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+        /* set */ result = 1;
+
+        if (__bool_check(_gte(count, 32)))
+        {
+            _ = printError($"Reached limit of type name symbols: {32}");
+            /* set */ result = 0;
+            goto END;
+        }
+
+    LOOP:
+        /* set */ slotOffset = _add(typeNamesTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto INSERT_SYMBOL;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            _ = printError($"Duplicate definition for '{Program.ReadString(identifierStr_ptr, 128)}' at line {Lexer_getLastValidLine()}");
+            _ = printError($"First definition: line {memRead(symbol_getField_ptr(slotOffset, 2))}"); // symbol.definitionLine
+
+            /* set */ result = 0;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    INSERT_SYMBOL:
+        _ = makeSymbol(slotOffset, allocateTypeNameSymbolStr(identifierStr_ptr), 4, 0, definitionLine);
+        _ = memWrite(_add(g_offset, 252), _add(count, 1)); // update s_typeNamesTbl_count
+
+    END:
+        return result;
+    }
+
+    public static int containsTypeNameSymbol(int identifierStr_ptr)
+    //func containsTypeNameSymbol(identifierStr_ptr: Int) -> Int
+    {
+        var count = (int)default;
+        var symbolSize = (int)default;
+        var i = (int)default;
+        var slotOffset = (int)default;
+        var fieldSize = (int)default;
+        var result = (int)default;
+        var typeNamesTbl_ptr = (int)default;
+
+        /* set */ typeNamesTbl_ptr = getTypeNamesTbl_ptr();
+        /* set */ count = getTypeNamesTbl_count();
+        /* set */ symbolSize = symbol_sizeOf();
+        /* set */ fieldSize = symbol_fieldSize();
+
+    LOOP:
+        /* set */ slotOffset = _add(typeNamesTbl_ptr, _mul(i, symbolSize));
+
+        if (__bool_check(_eq(i, count)))
+        {
+            goto END;
+        }
+
+        if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+        {
+            /* set */ result = 1;
+            goto END;
+        }
+
+        /* set */ i = _add(i, 1); // i++
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    #endregion Symbols
+
+    #region IL Emitter
+
+    public static int IL_Emitter_getStrBuffer_ptr()
+    //func IL_Emitter_getStrBuffer_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 280)); // s_IL_Emitter_strBuffer_ptr
+    }
+
+    public static int IL_Emitter_getStrBuffer_pos()
+    //func IL_Emitter_getStrBuffer_pos() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 284)); // s_IL_Emitter_strBuffer_pos
+    }
+
+    public static int IL_Emitter_getBaseILBeginTxt_ptr()
+    //func IL_Emitter_getBaseILBeginTxt_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 288)); // s_IL_Emitter_baseILBeginTxt_ptr
+    }
+
+    public static int IL_Emitter_getBaseILEndTxt_ptr()
+    //func IL_Emitter_getBaseILEndTxt_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 292)); // s_IL_Emitter_baseILEndTxt_ptr
+    }
+
+    public static int IL_Emitter_getRuntimeJsonTxt_ptr()
+    //func IL_Emitter_getRuntimeJsonTxt_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 296)); // s_IL_Emitter_RuntimeJsonTxt_ptr
+    }
+
+    public static int IL_Emitter_appendChar(int c)
+    //func IL_Emitter_appendChar(c: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var pos = (int)default;
+        var strBuffer = (int)default;
+        var result = (int)default;
+
+        /* set */ result = 1;
+
+        // Ignore '\0'
+        if (__bool_check(_eq(c, 0)))
+        {
+            goto END;
+        }
+
+        /* set */ g_offset = 0;
+
+        /* set */ strBuffer = IL_Emitter_getStrBuffer_ptr();
+        /* set */ pos = IL_Emitter_getStrBuffer_pos();
+
+        if (__bool_check(_gte(pos, 262144))) // max len 256 KB
+        {
+            /* set */ result = 0;
+            _ = printError($"The IL_Emitter strBuffer limit is {262144} bytes");
+            goto END;
+        }
+
+        _ = memWrite8(_add(strBuffer, pos), c); // s_IL_Emitter_strBuffer[pos] = c
+        /* set */ pos = _add(pos, 1); // pos++
+
+        // Insert termination
+        _ = memWrite8(_add(strBuffer, pos), 0); // s_IL_Emitter_strBuffer[pos] = '\0'
+
+        _ = memWrite(_add(g_offset, 284), pos); // update s_IL_Emitter_strBuffer_pos
+
+    END:
+        return result;
+    }
+
+    public static int IL_Emitter_appendTxt(int txt_ptr)
+    //func IL_Emitter_appendTxt(txt_ptr: Int) -> Int
+    {
+        var pos = (int)default;
+        var c = (int)default;
+        var result = (int)default;
+
+        /* set */ result = 1;
+
+    LOOP:
+        /* set */ c = memRead8(_add(pos, txt_ptr));
+        /* set */ result = IL_Emitter_appendChar(c);
+
+        if (__bool_check(_eq(result, 0)))
+        {
+            goto END;
+        }
+
+        /* set */ pos = _add(pos, 1);
+
+        if (__bool_check(_eq(c, 0))) // '\0'
+        {
+            goto END;
+        }
+
+        goto LOOP;
+
+    END:
+        return result;
+    }
+
+    public static int IL_Emitter_initEmitter(int ramBinLength_MB)
+    //func IL_Emitter_initEmitter(ramBinLength_MB: Int) -> Int
+    {
+        var g_offset = (int)default;
+        var result = (int)default;
+
+        /* set */ g_offset = 0;
+
+        // Clean s_IL_Emitter_strBuffer - 256 KB length
+        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 262144);
+        _ = memWrite(_add(g_offset, 284), 0); // s_IL_Emitter_strBuffer_pos = 0
+
+        /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
+
+        //TODO: set custom ramBinLength size
+
+        return result;
+    }
+
+    public static int IL_Emitter_finishEmitter()
+    //func IL_Emitter_finishEmitter() -> Int
+    {
+        var result = (int)default;
+
+        /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILEndTxt_ptr());
+
+        return result;
+    }
+
+    #endregion IL Emitter
+
+    #region Parser
 
     public static int getNextToken()
     //func getNextToken() -> Int
@@ -802,7 +2543,6 @@
         var srcTxt_ptr = (int)default;
         var tokenBuffer_ptr = (int)default;
         var tokenType = (int)default;
-        var tokenLine = (int)default;
         var c = (int)default;
         var pos = (int)default;
         var tmp_c = (int)default;
@@ -816,13 +2556,12 @@
         /* set */ line = Lexer_getLine();
 
         _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
-        _ = Lexer_resetTokenStrBuffPos();
+        _ = Lexer_resetTokenStrBuff_pos();
 
         /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-        if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+        if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
         {
             /* set */ tokenType = 21; // TokenType.EOF_TOKEN
-            /* set */ tokenLine = line;
             _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
             goto END;
         }
@@ -838,10 +2577,9 @@
             }
 
             /* set */ pos = Lexer_incPos();
-            if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+            if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
             {
                 /* set */ tokenType = 21; // TokenType.EOF_TOKEN
-                /* set */ tokenLine = line;
                 _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                 goto END;
             }
@@ -860,10 +2598,9 @@
                 if (__bool_check(_neq(c, 10))) // '\n'
                 {
                     /* set */ pos = Lexer_incPos();
-                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
                     {
                         /* set */ tokenType = 21; // TokenType.EOF_TOKEN
-                        /* set */ tokenLine = line;
                         _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                         goto END;
                     }
@@ -887,15 +2624,13 @@
                 if (__bool_check(_gte(c, 256)))
                 {
                     /* set */ tokenType = 100; // TokenType.UNKNOWN
-                    /* set */ tokenLine = line;
                     _ = memWrite8(_add(tokenBuffer_ptr, readCount), 0); // s_tokenStrBuff[0] = '\0'
                     goto END;
                 }
                 /* set */ pos = Lexer_incPos();
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
-                    /* set */ tokenLine = line;
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                     goto END;
                 }
@@ -906,75 +2641,92 @@
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 117), strEquals(tokenBuffer_ptr, getKeyword_using()))))
             {
                 /* set */ tokenType = 2; // TokenType.USING
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 102), strEquals(tokenBuffer_ptr, getKeyword_func()))))
             {
                 /* set */ tokenType = 3; // TokenType.FUNC
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 118), strEquals(tokenBuffer_ptr, getKeyword_var()))))
             {
                 /* set */ tokenType = 4; // TokenType.VAR
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 115), strEquals(tokenBuffer_ptr, getKeyword_set()))))
             {
                 /* set */ tokenType = 5; // TokenType.SET
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 105), strEquals(tokenBuffer_ptr, getKeyword_if()))))
             {
                 /* set */ tokenType = 6; // TokenType.IF
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 101), strEquals(tokenBuffer_ptr, getKeyword_else()))))
             {
                 /* set */ tokenType = 7; // TokenType.ELSE
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 103), strEquals(tokenBuffer_ptr, getKeyword_goto()))))
             {
                 /* set */ tokenType = 8; // TokenType.GOTO
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(_and(_eq(memRead8(tokenBuffer_ptr), 114), strEquals(tokenBuffer_ptr, getKeyword_return()))))
             {
                 /* set */ tokenType = 9; // TokenType.RETURN
-                /* set */ tokenLine = line;
                 goto END;
             }
 
             if (__bool_check(strEquals(tokenBuffer_ptr, getKeyword_underscoreSymbol())))
             {
                 /* set */ tokenType = 18; // TokenType.UNDERSCORE
-                /* set */ tokenLine = line;
                 goto END;
             }
 
-            if (__bool_check(strEquals(tokenBuffer_ptr, getKeyword_boolCheck())))
+            if (__bool_check(strEquals(tokenBuffer_ptr, getBuiltin_boolCheck())))
             {
                 /* set */ tokenType = 20; // TokenType.BOOL_CHECK
-                /* set */ tokenLine = line;
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getMacroName_int_max())))
+            {
+                _ = replaceMacro_int_max(Lexer_getTokenStrBuff_ptr());
+                /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getMacroName_int_width_bits())))
+            {
+                _ = replaceMacro_int_width_bits(Lexer_getTokenStrBuff_ptr());
+                /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getMacroName_int_width_bytes())))
+            {
+                _ = replaceMacro_int_width_bytes(Lexer_getTokenStrBuff_ptr());
+                /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
+                goto END;
+            }
+
+            if (__bool_check(strEquals(tokenBuffer_ptr, getMacroName_int_sign_bit_mask())))
+            {
+                _ = replaceMacro_int_sign_bit_mask(Lexer_getTokenStrBuff_ptr());
+                /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
                 goto END;
             }
 
             /* set */ tokenType = 0; // TokenType.IDENTIFIER
-            /* set */ tokenLine = line;
             goto END;
         }
 
@@ -989,15 +2741,13 @@
                 if (__bool_check(_gte(c, 256)))
                 {
                     /* set */ tokenType = 100; // TokenType.UNKNOWN
-                    /* set */ tokenLine = line;
                     _ = memWrite8(_add(tokenBuffer_ptr, readCount), 0); // s_tokenStrBuff[0] = '\0'
                     goto END;
                 }
                 /* set */ pos = Lexer_incPos();
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 65536)))) // '\0' || >= 64 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
-                    /* set */ tokenLine = line;
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                     goto END;
                 }
@@ -1006,7 +2756,6 @@
             }
 
             /* set */ tokenType = 1; // TokenType.INTEGER_LITERAL
-            /* set */ tokenLine = line;
             goto END;
         }
 
@@ -1015,7 +2764,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 10; // TokenType.L_PAREN
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 41))) // ')'
@@ -1023,7 +2771,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 11; // TokenType.R_PAREN
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 123))) // '{'
@@ -1031,7 +2778,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 12; // TokenType.L_BRACE
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 125))) // '}'
@@ -1039,7 +2785,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 13; // TokenType.R_BRACE
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 59))) // ';'
@@ -1047,7 +2792,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 14; // TokenType.SEMICOLON
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 44))) // ','
@@ -1055,7 +2799,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 16; // TokenType.COMMA
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 58))) // ':'
@@ -1063,7 +2806,6 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 15; // TokenType.COLON
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 61))) // '='
@@ -1071,14 +2813,13 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ tokenType = 17; // TokenType.EQUALS
-            /* set */ tokenLine = line;
             goto END;
         }
         if (__bool_check(_eq(c, 45))) // '-'
         {
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
-            if (__bool_check(_and(_neq(c, 0), _lt(pos, 65536)))) // != '\0' && < 64 KB
+            if (__bool_check(_and(_neq(c, 0), _lt(pos, 131072)))) // != '\0' && < 128 KB
             {
                 /* set */ c = memRead8(_add(srcTxt_ptr, pos));
                 if (__bool_check(_eq(c, 62))) // '>'
@@ -1086,24 +2827,21 @@
                     /* set */ pos = Lexer_incPos();
                     _ = Lexer_tokenBufferAppendChar(c);
                     /* set */ tokenType = 19; // TokenType.TRAILING_RETURN
-                    /* set */ tokenLine = line;
                     goto END;
                 }
                 else
                 {
                     /* set */ tokenType = 100; // TokenType.UNKNOWN
-                    /* set */ tokenLine = line;
                     goto END;
                 }
             }
         }
 
         /* set */ tokenType = 100; // TokenType.UNKNOWN
-        /* set */ tokenLine = line;
         _ = Lexer_tokenBufferAppendChar(c);
 
     END:
-        _ = setCurToken(tokenType, Lexer_getTokenStrBuff_ptr(), tokenLine);
+        _ = setCurToken(tokenType, Lexer_getTokenStrBuff_ptr(), line);
         return tokenType;
     }
 
@@ -1146,184 +2884,6 @@
         return 0;
     }
 
-    public static int Lexer_tokenBufferAppendChar(int c)
-    //func Lexer_tokenBufferAppendChar(c: Int) -> Int
-    {
-        var g_offset = (int)default;
-        var pos = (int)default;
-        var strBuffer = (int)default;
-
-        /* set */ g_offset = 0;
-        /* set */ strBuffer = Lexer_getTokenStrBuff_ptr(); // s_tokenStrBuff
-        /* set */ pos = Lexer_getTokenStrBuffPos(); // s_tokenStrBuff_pos
-
-        _ = memWrite8(_add(strBuffer, pos), c); // s_tokenStrBuff[pos] = c
-        /* set */ pos = _add(pos, 1); // pos++
-
-        if (__bool_check(_gte(pos, 256))) // max len 256 bytes
-        {
-            _ = printError($"The token strBuffer limit is {256} bytes");
-            goto END;
-        }
-
-        // Insert termination
-        _ = memWrite8(_add(strBuffer, pos), 0); // s_tokenStrBuff[pos] = '\0'
-
-        _ = memWrite(_add(g_offset, 124), pos); // update s_tokenStrBuff_pos
-
-    END:
-        // return cur len
-        return pos;
-    }
-
-    public static int IL_Emitter_initEmitter()
-    //func IL_Emitter_initEmitter() -> Int
-    {
-        var result = (int)default;
-
-        /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
-
-        return result;
-    }
-
-    public static int IL_Emitter_finishEmitter()
-    //func IL_Emitter_finishEmitter() -> Int
-    {
-        var result = (int)default;
-
-        /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILEndTxt_ptr());
-
-        return result;
-    }
-
-    public static int IL_Emitter_getStrBuffer_ptr()
-    //func IL_Emitter_getStrBuffer_ptr() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 64)); // s_IL_Emitter_strBuffer
-    }
-
-    public static int IL_Emitter_getBaseILBeginTxt_ptr()
-    //func IL_Emitter_getBaseILBeginTxt_ptr() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 76)); // s_IL_Emitter_baseILBegin_txt
-    }
-
-    public static int IL_Emitter_getBaseILEndTxt_ptr()
-    //func IL_Emitter_getBaseILEndTxt_ptr() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 80)); // s_IL_Emitter_baseILEnd_txt
-    }
-
-    public static int IL_Emitter_getRuntimeJsonTxt_ptr()
-    //func IL_Emitter_getRuntimeJsonTxt_ptr() -> Int
-    {
-        var g_offset = (int)default;
-        /* set */ g_offset = 0;
-
-        return memRead(_add(g_offset, 84)); // s_IL_Emitter_runtimeJson_txt
-    }
-
-    public static int IL_Emitter_appendChar(int c)
-    //func IL_Emitter_appendChar(c: Int) -> Int
-    {
-        var g_offset = (int)default;
-        var pos = (int)default;
-        var strBuffer = (int)default;
-        var result = (int)default;
-
-        /* set */ g_offset = 0;
-
-        /* set */ result = 1;
-        /* set */ strBuffer = IL_Emitter_getStrBuffer_ptr(); // s_IL_Emitter_strBuffer
-        /* set */ pos = memRead(_add(g_offset, 68)); // s_IL_Emitter_strBuffer_pos
-
-        _ = memWrite8(_add(strBuffer, pos), c); // s_IL_Emitter_strBuffer[pos] = c
-        /* set */ pos = _add(pos, 1); // pos++
-
-        if (__bool_check(_gte(pos, 65536))) // max len 64 KB
-        {
-            /* set */ result = 0;
-            _ = printError($"The IL_Emitter strBuffer limit is {65536} bytes");
-            goto END;
-        }
-
-        // Insert termination
-        _ = memWrite8(_add(strBuffer, pos), 0); // s_IL_Emitter_strBuffer[pos] = '\0'
-
-        _ = memWrite(_add(g_offset, 68), pos); // update s_IL_Emitter_strBuffer_pos
-
-    END:
-        return result;
-    }
-
-    public static int IL_Emitter_appendTxt(int txt_ptr)
-    //func IL_Emitter_appendTxt(txt_ptr: Int) -> Int
-    {
-        var pos = (int)default;
-        var c = (int)default;
-        var result = (int)default;
-
-        /* set */ result = 1;
-
-    LOOP:
-        /* set */ c = memRead8(_add(pos, txt_ptr));
-        /* set */ result = IL_Emitter_appendChar(c);
-
-        if (__bool_check(_eq(result, 0)))
-        {
-            goto END;
-        }
-
-        /* set */ pos = _add(pos, 1);
-
-        if (__bool_check(_eq(c, 0))) // '\0'
-        {
-            goto END;
-        }
-
-        goto LOOP;
-
-    END:
-        return result;
-    }
-
-    public static int parse()
-    //func parse() -> Int
-    {
-        var result = (int)default;
-
-        /* set */ result = IL_Emitter_initEmitter();
-        if (__bool_check(_eq(result, 0)))
-        {
-            _ = printError($"Failed initEmitter");
-            goto END;
-        }
-
-        /* set */ result = parseCompilationUnit();
-        if (__bool_check(_eq(result, 0)))
-        {
-            _ = printError("Failed to parse program");
-            goto END;
-        }
-        else
-        {
-            _ = printMessage("Program parsed successfully");
-            _ = IL_Emitter_finishEmitter();
-        }
-
-    END:
-        return result;
-    }
-
     public static int parseCompilationUnit()
     //func parseCompilationUnit() -> Int
     {
@@ -1333,30 +2893,186 @@
 
         _ = skipUTF8BOMMark(); // Skips UTF8 BOM mark, if any
 
-        _ = consumeToken(); // Initialize m_curToken
-
     #if false
         while (getNextToken() < 21)
         {
-            var str = System.Text.Encoding.UTF8.GetString(Program.s_RAM.AsSpan(200, 256));
-            str = str.Substring(0, str.IndexOf('\0'));
-            System.Console.WriteLine($"{getCurTokenType()} {str}");
+            _ = printMessage($"{getCurTokenType()} {Program.ReadString(getCurTokenValue_ptr(), 128)}");
         }
     #endif
+
+        _ = consumeToken(); // Initialize s_curToken
 
         return result;
     }
 
+    public static int parse()
+    //func parse() -> Int
+    {
+        var g_offset = (int)default;
+        var result = (int)default;
+
+        /* set */ result = IL_Emitter_initEmitter(memRead(_add(g_offset, 64)));
+        if (__bool_check(_eq(result, 0)))
+        {
+            _ = printError($"Failed initEmitter");
+            goto END;
+        }
+
+        /* set */ result = parseCompilationUnit();
+        if (__bool_check(_neq(result, 1)))
+        {
+            _ = printError("Failed to parse program");
+            /* set */ result = Lexer_getLastValidLine();
+            goto END;
+        }
+        else
+        {
+            /* set */ result = IL_Emitter_finishEmitter();
+            if (__bool_check(_eq(result, 0)))
+            {
+                _ = printError($"Failed finishEmitter");
+                /* set */ result = Lexer_getLastValidLine();
+            }
+            else
+            {
+                _ = printMessage("Program parsed successfully");
+                /* set */ result = 0;
+            }
+        }
+
+    END:
+        return result;
+    }
+
+    #endregion Parser
+
+    #region Initialization
+
+    public static int initGlobals()
+    //func initGlobals() -> Int
+    {
+        var g_offset = (int)default;
+        var ramBinLengthMB = (int)default;
+        var isDebugConfig = (int)default;
+
+        /* set */ g_offset = 0;
+
+        // Store input data
+        /* set */ ramBinLengthMB = memRead(_add(g_offset, 64)); // s_ramBinLength_MB
+        /* set */ isDebugConfig = memRead(_add(g_offset, 68)); // s_isDebugConfig
+
+        // Clean globals data arena - 2 KB len
+        _ = memSet(g_offset, 0, 2048);
+
+        // Restore input data
+        _ = memWrite(_add(g_offset, 64), ramBinLengthMB); // s_ramBinLength_MB
+        _ = memWrite(_add(g_offset, 68), isDebugConfig); // s_isDebugConfig
+
+        // Clean symbol tables arena - 98 + 388 => 488 KB len
+        _ = memSet(_add(g_offset, 2048), 0, 497664);
+
+        // Write hardcoded pointers
+        _ = memWrite(_add(g_offset, 72), _add(g_offset, 576)); // s_tmpBuff_ptr
+
+        _ = memWrite(_add(g_offset, 124), _add(g_offset, 320)); // s_curToken_value_ptr
+        _ = memWrite(_add(g_offset, 140), _add(g_offset, 448)); // s_tokenStrBuff_ptr
+
+        _ = memWrite(_add(g_offset, 160), _add(g_offset, 524288)); // s_srcCodeTxt_ptr
+
+        _ = memWrite(_add(g_offset, 200), _add(g_offset, 2048)); // s_functionsTbl_ptr
+        _ = memWrite(_add(g_offset, 208), _add(g_offset, 102400)); // s_functionsTbl_names_ptr
+        _ = memWrite(_add(g_offset, 216), _add(g_offset, 18432)); // s_functionScopeTbl_ptr
+        _ = memWrite(_add(g_offset, 224), _add(g_offset, 167936)); // s_functionScopeTbl_names_ptr
+        _ = memWrite(_add(g_offset, 232), _add(g_offset, 83968)); // s_unresolvedGotoTbl_ptr
+        _ = memWrite(_add(g_offset, 240), _add(g_offset, 430080)); // s_unresolvedGotoTbl_names_ptr
+        _ = memWrite(_add(g_offset, 248), _add(g_offset, 100352)); // s_typeNamesTbl_ptr
+        _ = memWrite(_add(g_offset, 256), _add(g_offset, 495616)); // s_typeNamesTbl_names_ptr
+
+        _ = memWrite(_add(g_offset, 280), _add(g_offset, 655360)); // s_IL_Emitter_strBuffer_ptr
+        _ = memWrite(_add(g_offset, 288), _add(g_offset, 499712)); // s_IL_Emitter_baseILBeginTxt_ptr
+        _ = memWrite(_add(g_offset, 292), _add(g_offset, 509952)); // s_IL_Emitter_baseILEndTxt_ptr
+        _ = memWrite(_add(g_offset, 296), _add(g_offset, 510976)); // s_IL_Emitter_RuntimeJsonTxt_ptr
+
+        return 0;
+    }
+
+    public static int initParser()
+    //func initParser() -> Int
+    {
+        var g_offset = (int)default;
+
+        /* set */ g_offset = 0;
+
+        _ = memWrite(getTmpBuffer_ptr(), 0); // s_tmpBuff[0] = '\0'
+
+        _ = memWrite(_add(g_offset, 120), 100); // s_curToken_type = TokenType.UNKNOWN
+        _ = memWrite(getCurTokenValue_ptr(), 0); // s_curToken_value[0] = '\0'
+        _ = memWrite(_add(g_offset, 128), 1); // s_curToken_line = 1
+
+        _ = memWrite(Lexer_getTokenStrBuff_ptr(), 0); // s_tokenStrBuff[0] = '\0'
+        _ = memWrite(_add(g_offset, 144), 0); // s_tokenStrBuff_pos = 0
+
+        _ = memWrite(_add(g_offset, 164), 0); // s_pos = 0
+        _ = memWrite(_add(g_offset, 168), 1); // s_line = 1
+        _ = memWrite(_add(g_offset, 172), 1); // s_lastValidLine = 1
+        _ = memWrite(_add(g_offset, 176), 0); // s_curScopeDepth = 0
+        _ = memWrite(_add(g_offset, 180), 0); // s_inFunctionScope = 0
+        _ = memWrite(_add(g_offset, 184), 0); // s_paramCount = 0
+        _ = memWrite(_add(g_offset, 188), 0); // s_ifLabelCounter = 0
+
+        _ = memWrite(_add(g_offset, 192), _mul(8, __INT_WIDTH_BYTES__)); // s_symbol_sizeof
+        _ = memWrite(_add(g_offset, 196), __INT_WIDTH_BYTES__); // s_symbol_field_size
+
+        _ = memWrite(_add(g_offset, 204), 0); // s_functionsTbl_count = 0
+        _ = memWrite(_add(g_offset, 212), 0); // s_functionsTbl_names_offset = 0
+        _ = memWrite(_add(g_offset, 220), 0); // s_functionScopeTbl_count = 0
+        _ = memWrite(_add(g_offset, 228), 0); // s_functionScopeTbl_names_offset = 0
+        _ = memWrite(_add(g_offset, 236), 0); // s_unresolvedGotoTbl_count = 0
+        _ = memWrite(_add(g_offset, 244), 0); // s_unresolvedGotoTbl_names_offset = 0
+        _ = memWrite(_add(g_offset, 252), 0); // s_typeNamesTbl_count = 0
+        _ = memWrite(_add(g_offset, 260), 0); // s_typeNamesTbl_names_offset = 0
+
+        _ = insertFunctionSymbol(getBuiltin_add());
+        _ = insertFunctionSymbol(getBuiltin_nand());
+        _ = insertFunctionSymbol(getBuiltin_mem_read());
+        _ = insertFunctionSymbol(getBuiltin_mem_write());
+
+        _ = markFunctionSymbolDefinitionFound(getBuiltin_add(), 0);
+        _ = markFunctionSymbolDefinitionFound(getBuiltin_nand(), 0);
+        _ = markFunctionSymbolDefinitionFound(getBuiltin_mem_read(), 0);
+        _ = markFunctionSymbolDefinitionFound(getBuiltin_mem_write(), 0);
+
+        _ = updateFunctionSymbolParamCount(getBuiltin_add(), 2);
+        _ = updateFunctionSymbolParamCount(getBuiltin_nand(), 2);
+        _ = updateFunctionSymbolParamCount(getBuiltin_mem_read(), 1);
+        _ = updateFunctionSymbolParamCount(getBuiltin_mem_write(), 2);
+
+        _ = insertTypeNameSymbol(getTypeName_Int(), 0);
+
+        // s_isDebugConfig
+        if (__bool_check(_eq(memRead(_add(g_offset, 64)), 1)))
+        {
+            _ = insertFunctionSymbol(getBuiltin_dbg_int());
+            _ = markFunctionSymbolDefinitionFound(getBuiltin_dbg_int(), 0);
+            _ = updateFunctionSymbolParamCount(getBuiltin_dbg_int(), 1);
+        }
+
+        return 0;
+    }
+
+    #endregion Initialization
 
     public static int main()
     //func main() -> Int
     {
+        var lineError = (int)default;
+
         _ = initGlobals();
         _ = initParser();
 
-        _ = parse();
+        /* set */ lineError = parse();
 
-        return 0;
+        return lineError;
     }
 
     public static int printError(string message)

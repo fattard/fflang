@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Text;
 
 class Program
@@ -282,28 +283,36 @@ FF_MAIN:
         s_RAM = new byte[ramBinLength_MB * 1024 * 1024];
         string ramDataFile = "RAM.bin";
 
+        BinaryPrimitives.WriteInt32LittleEndian(s_RAM.AsSpan(64), ramBinLength_MB);
+        BinaryPrimitives.WriteInt32LittleEndian(s_RAM.AsSpan(68), isDebug ? 1 : 0);
+
         var ILBeginArr = Encoding.UTF8.GetBytes(s_ILBegin.Replace("[[[_RAM.BIN_]]]", $"{ramBinLength_MB * 1024 * 1024} // {ramBinLength_MB} MB"));
-        Array.Copy(ILBeginArr, 0, s_RAM, 32768, ILBeginArr.Length);
+        Array.Copy(ILBeginArr, 0, s_RAM, 499712, ILBeginArr.Length);
 
         var ILEndArr = Encoding.UTF8.GetBytes(s_ILEnd);
-        Array.Copy(ILEndArr, 0, s_RAM, 40960, ILEndArr.Length);
+        Array.Copy(ILEndArr, 0, s_RAM, 509952, ILEndArr.Length);
 
         var ILRuntimeJsonArr = Encoding.UTF8.GetBytes(s_ILRuntimeJson);
-        Array.Copy(ILRuntimeJsonArr, 0, s_RAM, 41088, ILRuntimeJsonArr.Length);
+        Array.Copy(ILRuntimeJsonArr, 0, s_RAM, 510976, ILRuntimeJsonArr.Length);
 
         var srcCodeArr = System.IO.File.ReadAllBytes(srcCodePath);
-        Array.Copy(srcCodeArr, 0, s_RAM, 65536, srcCodeArr.Length);
+        Array.Copy(srcCodeArr, 0, s_RAM, 524288, srcCodeArr.Length);
 
         // ------ FFLang Entry point
         int exitCode = ILGenerator.main();
         // -------------------------
 
-        var outputTxtBytes = s_RAM.AsSpan(131072, 65536);
-        var outputTxt = Encoding.UTF8.GetString(outputTxtBytes).TrimEnd('\0');
-        System.IO.File.WriteAllText("FFLang_Program.il", outputTxt);
+        System.IO.File.WriteAllText("FFLang_Program.il", ReadString(655360, 262144));
 
         System.IO.File.WriteAllBytes(ramDataFile, s_RAM);
 
         Console.WriteLine($"Exit code: {exitCode}");
+    }
+
+    public static string ReadString(int str_ptr, int len)
+    {
+        var str = Encoding.UTF8.GetString(s_RAM.AsSpan(str_ptr, len));
+        str = str.Substring(0, str.IndexOf('\0'));
+        return str;
     }
 }
