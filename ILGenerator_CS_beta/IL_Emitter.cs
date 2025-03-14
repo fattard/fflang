@@ -3,7 +3,6 @@
 static class IL_Emitter
 {
     static StringBuilder s_sb = new StringBuilder();
-    static int s_ifElseScopeCount = 0;
 
     static string WriteIL_Begin()
     {
@@ -295,27 +294,23 @@ FF_MAIN:
         s_sb.AppendLine($"    {"call",-11}bool FFLang_Global.Functions::{"__bool_check"}(int32)");
     }
 
-    public static void Emit_IfBegin(int scopeDepth)
+    public static void Emit_IfBegin(int ifLabelCounter)
     {
-        s_sb.AppendLine($"    {"brfalse",-11}'IF_FALSE_${s_ifElseScopeCount}_${scopeDepth}'");
+        s_sb.AppendLine($"    {"brfalse",-11}'IF_FALSE_${ifLabelCounter}'");
     }
 
-    public static void Emit_Else(bool hasBlock, int scopeDepth)
+    public static void Emit_Else(bool hasBlock, int ifLabelCounter)
     {
         if (hasBlock)
         {
-            s_sb.AppendLine($"    {"br",-11}'IF_END_${s_ifElseScopeCount}_${scopeDepth}'");
+            s_sb.AppendLine($"    {"br",-11}'IF_END_${ifLabelCounter}'");
         }
-        s_sb.AppendLine($"'IF_FALSE_${s_ifElseScopeCount}_${scopeDepth}':");
+        s_sb.AppendLine($"'IF_FALSE_${ifLabelCounter}':");
     }
 
-    public static void Emit_IfEnd(int scopeDepth)
+    public static void Emit_IfEnd(int ifLabelCounter)
     {
-        s_sb.AppendLine($"'IF_END_${s_ifElseScopeCount}_${scopeDepth}':");
-        if (scopeDepth == 0)
-        {
-            s_ifElseScopeCount++;
-        }
+        s_sb.AppendLine($"'IF_END_${ifLabelCounter}':");
     }
 
     public static void Emit_DiscardReturn()
@@ -369,7 +364,6 @@ FF_MAIN:
 
     public static void Emit_MethodBodyBegin()
     {
-        s_ifElseScopeCount = 0;
         s_sb.AppendLine($"{{");
         s_sb.AppendLine($"    {".maxstack",-11}8");
         s_sb.AppendLine();

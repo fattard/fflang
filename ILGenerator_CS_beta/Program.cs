@@ -92,6 +92,7 @@ class Parser
     private int m_curScopeDepth;
     private bool m_inFunctionScope;
     private int m_paramCount;
+    private int m_ifLabelCounter;
 
     private List<Symbol> m_functionsTbl;
     private List<Symbol> m_functionScopeTbl;
@@ -109,6 +110,7 @@ class Parser
         m_curScopeDepth = 0;
         m_inFunctionScope = false;
         m_paramCount = 0;
+        m_ifLabelCounter = 0;
 
         m_functionsTbl = new List<Symbol>();
         m_functionScopeTbl = new List<Symbol>();
@@ -700,7 +702,9 @@ class Parser
             return false;
         }
         ConsumeToken();
-        IL_Emitter.Emit_IfBegin(m_curScopeDepth);
+        int curIfLabelCount = m_ifLabelCounter;
+        m_ifLabelCounter++;
+        IL_Emitter.Emit_IfBegin(curIfLabelCount);
 
         if (!MatchTokenType(TokenType.L_BRACE))
         {
@@ -730,7 +734,7 @@ class Parser
 
         if (MatchTokenType(TokenType.ELSE))
         {
-            IL_Emitter.Emit_Else(true, m_curScopeDepth);
+            IL_Emitter.Emit_Else(true, curIfLabelCount);
             ConsumeToken();
             if (!ParseElseStatement())
             {
@@ -739,10 +743,10 @@ class Parser
         }
         else
         {
-            IL_Emitter.Emit_Else(false, m_curScopeDepth);
+            IL_Emitter.Emit_Else(false, curIfLabelCount);
         }
 
-        IL_Emitter.Emit_IfEnd(m_curScopeDepth);
+        IL_Emitter.Emit_IfEnd(curIfLabelCount);
 
         return true;
     }
@@ -1336,6 +1340,7 @@ class Parser
         m_functionScopeTbl.Clear();
         m_unresolvedGotoTbl.Clear();
         m_curScopeDepth = 0;
+        m_ifLabelCounter = 0;
     }
 
     bool InsertFunctionScopeSymbol(string identifier, SymbolType symbolType, int scopeDepth, int definitionLine)
