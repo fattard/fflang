@@ -490,6 +490,15 @@ class Parser
             PrintError($"Expected type after ':' at line {m_lastValidLine}. Found '{m_curToken.value}'");
             return false;
         }
+        if (!ContainsTypeNameSymbol(m_curToken.value))
+        {
+            PrintError($"Undefined type name symbol at line {m_lastValidLine}. Found '{m_curToken.value}'");
+            if (m_curToken.value == "int")
+            {
+                PrintError($"Did you mean 'Int'?");
+            }
+            return false;
+        }
         ConsumeToken();
 
         if (!MatchTokenType(TokenType.SEMICOLON))

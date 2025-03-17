@@ -2,6 +2,27 @@ using func getTmpBuffer_ptr() -> Int;
 using func printError(message_ptr: Int) -> Int;
 using func printMessage(message_ptr: Int) -> Int;
 using func parseCompilationUnit() -> Int;
+using func parseUsingDirective() -> Int;
+using func parseFunctionDeclaration() -> Int;
+using func parseFunctionHeader() -> Int;
+using func parseFunctionParameterList() -> Int;
+using func parseFunctionParameter() -> Int;
+using func parseFunctionBody() -> Int;
+using func parseLocalVariableDeclaration() -> Int;
+using func parseStatement() -> Int;
+using func parseLabelStatement() -> Int;
+using func parseGotoStatement() -> Int;
+using func parseSetStatement() -> Int;
+using func parseIfStatement() -> Int;
+using func parseElseStatement() -> Int;
+using func parseDiscardStatement() -> Int;
+using func parseReturnStatement() -> Int;
+using func parsePrimaryExpression() -> Int;
+using func parseBooleanExpression() -> Int;
+using func parseFunctionInvocation() -> Int;
+using func parseFunctionInvocationTail() -> Int;
+using func parseFunctionArgumentList() -> Int;
+using func parseFunctionArgument() -> Int;
 
 //#region Helpers
 
@@ -683,7 +704,7 @@ func incParamCount() -> Int
     return count;
 }
 
-func getIfLabelCounter(count: Int) -> Int
+func getIfLabelCounter() -> Int
 {
     var g_offset: Int;
     set g_offset = 0;
@@ -1721,6 +1742,42 @@ END:
     return result;
 }
 
+func getFunctionSymbol_ptr(identifierStr_ptr: Int) -> Int
+{
+    var count: Int;
+    var symbolSize: Int;
+    var i: Int;
+    var slotOffset: Int;
+    var fieldSize: Int;
+    var functionTbl_ptr: Int;
+    var result: Int;
+
+    set functionTbl_ptr = getFunctionTbl_ptr();
+    set count = getFunctionTbl_count();
+    set symbolSize = symbol_sizeOf();
+    set fieldSize = symbol_fieldSize();
+
+LOOP:
+    set slotOffset = _add(functionTbl_ptr, _mul(i, symbolSize));
+
+    if (__bool_check(_eq(i, count)))
+    {
+        goto END;
+    }
+
+    if (__bool_check(strEquals(memRead(slotOffset), identifierStr_ptr)))
+    {
+        set result = slotOffset;
+        goto END;
+    }
+
+    set i = _add(i, 1); // i++
+    goto LOOP;
+
+END:
+    return result;
+}
+
 func anyReferencedFunctionNotDefined() -> Int
 {
     var count: Int;
@@ -2560,7 +2617,6 @@ ARGS_TAIL:
 func IL_Emitter_emit_boolCheck() -> Int
 {
     var result: Int;
-    var i: Int;
 
     set result = 1;
 
@@ -3188,13 +3244,13 @@ LOOP_SKIP_WHITESPACE:
         }
 
         set pos = Lexer_incPos();
+        set c = memRead8(_add(srcTxt_ptr, pos));
         if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
         {
             set tokenType = 21; // TokenType.EOF_TOKEN
             _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
             goto END;
         }
-        set c = memRead8(_add(srcTxt_ptr, pos));
         goto LOOP_SKIP_WHITESPACE;
     }
 
@@ -3209,13 +3265,13 @@ LOOP_SKIP_WHITESPACE:
             if (__bool_check(_neq(c, 10))) // '\n'
             {
                 set pos = Lexer_incPos();
+                set c = memRead8(_add(srcTxt_ptr, pos));
                 if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
                 {
                     set tokenType = 21; // TokenType.EOF_TOKEN
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                     goto END;
                 }
-                set c = memRead8(_add(srcTxt_ptr, pos));
                 goto LOOP_SKIP_COMMENTS;
             }
 
@@ -3239,13 +3295,13 @@ LOOP_SKIP_WHITESPACE:
                 goto END;
             }
             set pos = Lexer_incPos();
+            set c = memRead8(_add(srcTxt_ptr, pos));
             if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
             {
                 set tokenType = 21; // TokenType.EOF_TOKEN
                 _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                 goto END;
             }
-            set c = memRead8(_add(srcTxt_ptr, pos));
             goto LOOP_IDENTIFIER;
         }
 
@@ -3356,13 +3412,13 @@ LOOP_SKIP_WHITESPACE:
                 goto END;
             }
             set pos = Lexer_incPos();
+            set c = memRead8(_add(srcTxt_ptr, pos));
             if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
             {
                 set tokenType = 21; // TokenType.EOF_TOKEN
                 _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
                 goto END;
             }
-            set c = memRead8(_add(srcTxt_ptr, pos));
             goto LOOP_DIGIT;
         }
 
@@ -3430,9 +3486,9 @@ LOOP_SKIP_WHITESPACE:
     {
         set pos = Lexer_incPos();
         _ = Lexer_tokenBufferAppendChar(c);
+        set c = memRead8(_add(srcTxt_ptr, pos));
         if (__bool_check(_and(_neq(c, 0), _lt(pos, 131072)))) // != '\0' && < 128 KB
         {
-            set c = memRead8(_add(srcTxt_ptr, pos));
             if (__bool_check(_eq(c, 62))) // '>'
             {
                 set pos = Lexer_incPos();
@@ -3495,6 +3551,7 @@ func skipUTF8BOMMark() -> Int
 
 func parseCompilationUnit() -> Int
 {
+    var g_offset: Int;
     var result: Int;
 
     set result = 1;
@@ -3503,6 +3560,73 @@ func parseCompilationUnit() -> Int
 
     _ = consumeToken(); // Initialize s_curToken
 
+LOOP_USING:
+    if (__bool_check(notMatchTokenType(2))) // TokenType.USING
+    {
+        goto END_USING;
+    }
+
+    _ = consumeToken();
+    _ = resetFunctionScope();
+    if (__bool_check(_neq(parseUsingDirective(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    goto LOOP_USING;
+
+END_USING:
+    _ = memWrite(_add(g_offset, 180), 1); // s_inFunctionScope = 1
+
+LOOP_FUNCTIONS:
+    if (__bool_check(notMatchTokenType(3))) // TokenType.FUNC
+    {
+        goto END_FUNCTIONS;
+    }
+
+    _ = consumeToken();
+    _ = resetFunctionScope();
+    if (__bool_check(_neq(parseFunctionDeclaration(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    goto LOOP_FUNCTIONS;
+
+END_FUNCTIONS:
+    if (__bool_check(notMatchTokenType(21))) // TokenType.EOF
+    {
+        //if (__bool_check(_lt(Lexer_getPos(), strLen(Lexer_getSrcCodeTxt_ptr()))))
+        //{
+        //_ = printError($"Unexpected token at line {getCurTokenLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        //}
+        //else
+        //{
+        //_ = printError($"Unexpected token at end of file. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        //}
+
+        //_ = printError($"Unexpected token at line {getCurTokenLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(anyReferencedFunctionNotDefined()))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(_neq(isMainFunctionValid(), 1)))
+    {
+        //_ = printError($"Entry point is missing. Please provide a 'main()' function implementation.");
+        set result = 0;
+        goto END;
+    }
+
+END:
     return result;
 }
 
@@ -3512,6 +3636,29 @@ func parseUsingDirective() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(3))) // TokenType.FUNC
+    {
+        //_ = printError($"Expected 'func' after 'using' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(_neq(parseFunctionHeader(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after using directive at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+END:
     return result;
 }
 
@@ -3521,15 +3668,138 @@ func parseFunctionDeclaration() -> Int
 
     set result = 1;
 
+    if (__bool_check(_neq(parseFunctionHeader(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(_neq(parseFunctionBody(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(anyUnresolvedGoto()))
+    {
+        set result = 0;
+        goto END;
+    }
+
+END:
     return result;
 }
 
 func parseFunctionHeader() -> Int
 {
     var result: Int;
+    var wasForwardDeclared: Int;
+    var funcName: Int;
+    var defLine: Int;
+    var tmpStr: Int;
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected valid function name after 'func' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+
+    set wasForwardDeclared = 0;
+    if (__bool_check(_neq(isInFunctionScope(), 1)))
+    {
+        _ = insertFunctionSymbol(getCurTokenValue_ptr());
+    }
+    else
+    {
+        if (__bool_check(_neq(insertFunctionSymbol(getCurTokenValue_ptr()), 1)))
+        {
+            set wasForwardDeclared = 1;
+        }
+        if (__bool_check(isFunctionSymbolDefinitionFound(getCurTokenValue_ptr())))
+        {
+            set result = 0;
+            goto END;
+        }
+        _ = markFunctionSymbolDefinitionFound(getCurTokenValue_ptr(), Lexer_getLastValidLine());
+    }
+    set funcName = memRead(getFunctionSymbol_ptr(getCurTokenValue_ptr()));
+    set defLine = Lexer_getLastValidLine();
+    _ = setParamCount(0);
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(10))) // TokenType.L_PAREN
+    {
+        //_ = printError($"Expected '(' after function name at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        if (__bool_check(_neq(parseFunctionParameterList(), 1)))
+        {
+            set result = 0;
+            goto END;
+        }
+    }
+
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        //_ = printError($"Expected ')' after parameter list at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(19))) // TokenType.TRAILING_RETURN
+    {
+        //_ = printError($"Expected '->' after ')' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected type after '->' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    if (__bool_check(_neq(containsTypeNameSymbol(getCurTokenValue_ptr()), 1)))
+    {
+        //_ = printError($"Undefined type name symbol at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set tmpStr = getTypeName_Int();
+        _ = memWrite8(tmpStr, 105); // 'i'
+        if (__bool_check(strEquals(getCurTokenValue_ptr(), tmpStr)))
+        {
+            //_ = printError($"Did you mean 'Int'?");
+        }
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    // s_inFunctionScope && wasForwardDeclared
+    if (__bool_check(_and(isInFunctionScope(), wasForwardDeclared)))
+    {
+        if (__bool_check(_neq(matchFunctionSymbolParamCount(funcName, getParamCount()), 1)))
+        {
+            //_ = printError($"Definition of function '{Program.ReadString(funcName, 128)}' at line {defLine} with different number of paramaters from declaration.");
+            set result = 0;
+            goto END;
+        }
+    }
+    _ = updateFunctionSymbolParamCount(funcName, getParamCount());
+    if (__bool_check(isInFunctionScope()))
+    {
+        _ = IL_Emitter_emit_methodHeader(funcName, getParamCount());
+    }
+
+END:
     return result;
 }
 
@@ -3539,15 +3809,88 @@ func parseFunctionParameterList() -> Int
 
     set result = 1;
 
+    if (__bool_check(_neq(parseFunctionParameter(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = incParamCount();
+
+LOOP:
+    if (__bool_check(notMatchTokenType(16))) // TokenType.COMMA
+    {
+        goto END;
+    }
+
+    _ = consumeToken();
+    if (__bool_check(_neq(parseFunctionParameter(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = incParamCount();
+
+    goto LOOP;
+
+END:
     return result;
 }
 
 func parseFunctionParameter() -> Int
 {
     var result: Int;
+    var tmpStr: Int;
 
     set result = 1;
 
+
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected identifier in parameters at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(isInFunctionScope()))
+    {
+        if (__bool_check(_neq(insertFunctionScopeSymbol(getCurTokenValue_ptr(), 1, getParamCount(), Lexer_getLastValidLine()), 1)))
+        {
+            set result = 0;
+            goto END;
+        }
+        _ = markFunctionScopeSymbolDefinitionFound(getCurTokenValue_ptr(), Lexer_getLastValidLine());
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(15))) // TokenType.COLON
+    {
+        //_ = printError($"Expected ':' after identifier at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected type after ':' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    if (__bool_check(_neq(containsTypeNameSymbol(getCurTokenValue_ptr()), 1)))
+    {
+        //_ = printError($"Undefined type name symbol at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set tmpStr = getTypeName_Int();
+        _ = memWrite8(tmpStr, 105); // 'i'
+        if (__bool_check(strEquals(getCurTokenValue_ptr(), tmpStr)))
+        {
+            //_ = printError($"Did you mean 'Int'?");
+        }
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+END:
     return result;
 }
 
@@ -3557,24 +3900,242 @@ func parseFunctionBody() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(12))) // TokenType.L_BRACE
+    {
+        //_ = printError($"Expected '{{' after function header at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = IL_Emitter_emit_methodBodyBegin();
+    _ = consumeToken();
+
+    _ = setParamCount(0);
+
+LOOP_LOCAL_VARS:
+    if (__bool_check(notMatchTokenType(4))) // TokenType.VAR
+    {
+        goto END_LOCAL_VARS;
+    }
+
+    _ = consumeToken();
+    if (__bool_check(_neq(parseLocalVariableDeclaration(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = incParamCount();
+
+    goto LOOP_LOCAL_VARS;
+
+END_LOCAL_VARS:
+    if (__bool_check(_gt(getParamCount(), 0)))
+    {
+        _ = IL_Emitter_emit_initLocals(getParamCount());
+    }
+
+LOOP_STATEMENTS:
+    if (__bool_check(matchTokenType(9))) // TokenType.RETURN
+    {
+        goto RETURN_STATEMENT;
+    }
+
+    if (__bool_check(_neq(parseStatement(), 1)))
+    {
+        if (__bool_check(matchTokenType(13))) // TokenType.R_BRACE
+        {
+            //_ = printError($"Expected return statement at line {getCurTokenLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        }
+        set result = 0;
+        goto END;
+    }
+
+    goto LOOP_STATEMENTS;
+
+RETURN_STATEMENT:
+    if (__bool_check(_neq(parseReturnStatement(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(13))) // TokenType.R_BRACE
+    {
+        //_ = printError($"Expected '}}' after return statement at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = IL_Emitter_emit_methodBodyEnd();
+    _ = consumeToken();
+
+END:
     return result;
 }
 
 func parseLocalVariableDeclaration() -> Int
 {
     var result: Int;
+    var tmpStr: Int;
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected identifier after 'var' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(isInFunctionScope()))
+    {
+        if (__bool_check(_neq(insertFunctionScopeSymbol(getCurTokenValue_ptr(), 2, getParamCount(), Lexer_getLastValidLine()), 1)))
+        {
+            set result = 0;
+            goto END;
+        }
+        _ = markFunctionScopeSymbolDefinitionFound(getCurTokenValue_ptr(), Lexer_getLastValidLine());
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(15))) // TokenType.COLON
+    {
+        //_ = printError($"Expected ':' after identifier at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected type after ':' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    if (__bool_check(_neq(containsTypeNameSymbol(getCurTokenValue_ptr()), 1)))
+    {
+        //_ = printError($"Undefined type name symbol at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set tmpStr = getTypeName_Int();
+        _ = memWrite8(tmpStr, 105); // 'i'
+        if (__bool_check(strEquals(getCurTokenValue_ptr(), tmpStr)))
+        {
+            //_ = printError($"Did you mean 'Int'?");
+        }
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after type at at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+
+END:
     return result;
 }
 
 func parseStatement() -> Int
 {
     var result: Int;
+    var curIdentifier: Int;
 
     set result = 1;
 
+    if (__bool_check(matchTokenType(5))) // TokenType.SET
+    {
+        _ = consumeToken();
+        if (__bool_check(_neq(parseSetStatement(), 1)))
+        {
+            set result = 0;
+        }
+        goto END;
+    }
+
+    if (__bool_check(matchTokenType(6))) // TokenType.IF
+    {
+        _ = consumeToken();
+        if (__bool_check(_neq(parseIfStatement(), 1)))
+        {
+            set result = 0;
+        }
+        goto END;
+    }
+
+    if (__bool_check(matchTokenType(8))) // TokenType.GOTO
+    {
+        _ = consumeToken();
+        if (__bool_check(_neq(parseGotoStatement(), 1)))
+        {
+            set result = 0;
+        }
+        goto END;
+    }
+
+    if (__bool_check(matchTokenType(18))) // TokenType.UNDERSCORE
+    {
+        _ = consumeToken();
+        if (__bool_check(_neq(parseDiscardStatement(), 1)))
+        {
+            set result = 0;
+        }
+        goto END;
+    }
+
+    if (__bool_check(matchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        set curIdentifier = _add(getTmpBuffer_ptr(), 128);
+        _ = strCpy(getCurTokenValue_ptr(), curIdentifier);
+        _ = consumeToken();
+        if (__bool_check(matchTokenType(15))) // TokenType.COLON
+        {
+            _ = consumeToken();
+            if (__bool_check(_neq(parseLabelStatement(), 1)))
+            {
+                set result = 0;
+                goto END;
+            }
+
+            if (__bool_check(containsFunctionScopeSymbol(curIdentifier)))
+            {
+                if (__bool_check(_neq(matchFunctionScopeSymbolType(curIdentifier, 3), 1))) // SymbolType.LABEL
+                {
+                    //_ = printError($"Identifier '{Program.ReadString(curIdentifier, 128)}' at line {Lexer_getLastValidLine()} is already defined");
+                    set result = 0;
+                    goto END;
+                }
+                if (__bool_check(isFunctionScopeSymbolDefinitionFound(curIdentifier)))
+                {
+                    set curIdentifier = memRead(getFunctionScopeSymbol_ptr(curIdentifier));
+                    //_ = printError($"Duplicate definition for '{Program.ReadString(curIdentifier, 128)}' at line {Lexer_getLastValidLine()}");
+                    //_ = printError($"First definition: line {memRead(symbol_getField_ptr(curIdentifier, 2))}");
+                    set result = 0;
+                    goto END;
+                }
+                _ = updateFunctionScopeSymbolScopeDepth(curIdentifier, getCurScopeDepth());
+            }
+            else
+            {
+                _ = insertFunctionScopeSymbol(curIdentifier, 3, getCurScopeDepth(), Lexer_getLastValidLine());
+            }
+            _ = markFunctionScopeSymbolDefinitionFound(curIdentifier, Lexer_getLastValidLine());
+            _ = IL_Emitter_emit_label(curIdentifier);
+            goto END;
+        }
+        else
+        {
+            //_ = printError($"Unexpected token at line {getCurTokenLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+            set result = 0;
+            goto END;
+        }
+    }
+
+    //_ = printError($"Unexpected token at line {getCurTokenLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+    set result = 0;
+
+END:
     return result;
 }
 
@@ -3593,27 +4154,202 @@ func parseGotoStatement() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected identifier after 'goto' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(_neq(containsFunctionScopeSymbol(getCurTokenValue_ptr()), 1)))
+    {
+        _ = insertUnresolvedGotoSymbol(getCurTokenValue_ptr(), getCurScopeDepth(), Lexer_getLastValidLine());
+    }
+    else { if (__bool_check(_neq(matchFunctionScopeSymbolType(getCurTokenValue_ptr(), 3), 1))) // SymbolType.LABEL
+    {
+        //_ = printError($"Identifier '{Program.ReadString(getCurTokenValue_ptr(), 128)}' at line {Lexer_getLastValidLine()} is already defined.");
+        set result = 0;
+        goto END;
+    }}
+    if (__bool_check(_gt(memRead(symbol_getField_ptr(getFunctionScopeSymbol_ptr(getCurTokenValue_ptr()), 3)), getCurScopeDepth())))
+    {
+        //_ = printError($"Label '{Program.ReadString(getCurTokenValue_ptr(), 128)}' is not available at current scope at line {Lexer_getLastValidLine()}.");
+        set result = 0;
+        goto END;
+    }
+    _ = IL_Emitter_emit_goto(getCurTokenValue_ptr());
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after identifier at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+END:
     return result;
 }
 
 func parseSetStatement() -> Int
 {
     var result: Int;
+    var varName: Int;
+    var symbol: Int;
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected identifier after 'set' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(_neq(containsFunctionScopeSymbol(getCurTokenValue_ptr()), 1)))
+    {
+        //_ = printError($"Undefined symbol '{Program.ReadString(getCurTokenValue_ptr(), 128)}' at line {Lexer_getLastValidLine()}");
+        set result = 0;
+        goto END;
+    }
+
+    // Needs either SymbolType.LOCAL_VARIABLE or SymbolType.ARGUMENT_VARIABLE
+    if (__bool_check(_and(_neq(matchFunctionScopeSymbolType(getCurTokenValue_ptr(), 2), 1), _neq(matchFunctionScopeSymbolType(getCurTokenValue_ptr(), 1), 1))))
+    {
+        //_ = printError($"Expected variable symbol after 'set' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    set varName = _add(getTmpBuffer_ptr(), 128); // s_tmpBuff2_ptr
+    _ = strCpy(getCurTokenValue_ptr(), varName);
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(17))) // TokenType.EQUALS
+    {
+        //_ = printError($"Expected '=' after identifier at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parsePrimaryExpression(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after expression at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    set symbol = getFunctionScopeSymbol_ptr(varName);
+    if (__bool_check(_eq(memRead(symbol_getField_ptr(symbol, 1)), 1))) // SymbolType.ARGUMENT_VARIABLE
+    {
+        _ = IL_Emitter_emit_storeArgVar(memRead(symbol_getField_ptr(symbol, 3)));
+        goto END;
+    }
+    if (__bool_check(_eq(memRead(symbol_getField_ptr(symbol, 1)), 2))) // SymbolType.LOCAL_VARIABLE
+    {
+        _ = IL_Emitter_emit_storeLocalVar(memRead(symbol_getField_ptr(symbol, 3)));
+        goto END;
+    }
+
+END:
     return result;
 }
 
 func parseIfStatement() -> Int
 {
     var result: Int;
+    var curIfLabelCount: Int;
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(10))) // TokenType.L_PAREN
+    {
+        //_ = printError($"Expected '(' after 'if' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(_neq(parseBooleanExpression(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        //_ = printError($"Expected ')' after boolean expression at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+    set curIfLabelCount = getIfLabelCounter();
+    _ = incIfLabelCounter();
+    _ = IL_Emitter_emit_ifBegin(curIfLabelCount);
+
+    if (__bool_check(notMatchTokenType(12))) // TokenType.L_BRACE
+    {
+        //_ = printError($"Expected '{{' after ')' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = incCurScopeDepth();
+LOOP:
+    if (__bool_check(matchTokenType(13))) // TokenType.R_BRACE
+    {
+        goto SCOPE_END;
+    }
+
+    if (__bool_check(_neq(parseStatement(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    goto LOOP;
+
+SCOPE_END:
+    if (__bool_check(notMatchTokenType(13))) // TokenType.R_BRACE
+    {
+        //_ = printError($"Expected '}}' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = decCurScopeDepth();
+
+    if (__bool_check(matchTokenType(7))) // TokenType.ELSE
+    {
+        _ = IL_Emitter_emit_else(1, curIfLabelCount);
+        _ = consumeToken();
+        if (__bool_check(_neq(parseElseStatement(), 1)))
+        {
+            set result = 0;
+            goto END;
+        }
+    }
+    else
+    {
+        _ = IL_Emitter_emit_else(0, curIfLabelCount);
+    }
+
+    _ = IL_Emitter_emit_ifEnd(curIfLabelCount);
+
+END:
     return result;
 }
-
 
 func parseElseStatement() -> Int
 {
@@ -3621,9 +4357,43 @@ func parseElseStatement() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(12))) // TokenType.L_BRACE
+    {
+        //_ = printError($"Expected '{{' after ')' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = incCurScopeDepth();
+LOOP:
+    if (__bool_check(matchTokenType(13))) // TokenType.R_BRACE
+    {
+        goto SCOPE_END;
+    }
+
+    if (__bool_check(_neq(parseStatement(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    goto LOOP;
+
+SCOPE_END:
+    if (__bool_check(notMatchTokenType(13))) // TokenType.R_BRACE
+    {
+        //_ = printError($"Expected '}}' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = decCurScopeDepth();
+
+END:
     return result;
 }
-
 
 func parseDiscardStatement() -> Int
 {
@@ -3631,9 +4401,33 @@ func parseDiscardStatement() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(17))) // TokenType.EQUALS
+    {
+        //_ = printError($"Expected '=' after '_' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parseFunctionInvocation(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after function invocation at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+    _ = IL_Emitter_emit_discardReturn();
+
+END:
     return result;
 }
-
 
 func parseReturnStatement() -> Int
 {
@@ -3641,19 +4435,120 @@ func parseReturnStatement() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(9))) // TokenType.RETURN
+    {
+        //_ = printError($"Expected 'return' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parsePrimaryExpression(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(14))) // TokenType.SEMICOLON
+    {
+        //_ = printError($"Expected ';' after expression at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+    _ = IL_Emitter_emit_return();
+
+END:
     return result;
 }
-
 
 func parsePrimaryExpression() -> Int
 {
     var result: Int;
+    var curIdentifierStr: Int;
+    var oldParamCount: Int;
+    var symbol: Int;
 
     set result = 1;
 
+    if (__bool_check(matchTokenType(1))) // TokenType.INTEGER_LITERAL
+    {
+        //if (long.Parse(Program.ReadString(Lexer_getTokenStrBuff_ptr(), 128)) > 2147483647)
+        //{
+            //_ = printError($"Integer overflow at line {Lexer_getLastValidLine()}: '{Program.ReadString(Lexer_getTokenStrBuff_ptr(), 128)}' exceeds max allowed value {2147483647}.");
+            //set result = 0;
+            //goto END;
+        //}
+        _ = IL_Emitter_emit_loadConst(getCurTokenValue_ptr());
+        _ = consumeToken();
+        goto END;
+    }
+
+    if (__bool_check(matchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        set curIdentifierStr = _add(getTmpBuffer_ptr(), 128); // s_tmpBuff2_ptr
+        _ = strCpy(Lexer_getTokenStrBuff_ptr(), curIdentifierStr);
+        _ = consumeToken();
+        if (__bool_check(matchTokenType(10))) // TokenType.L_PAREN
+        {
+            if (__bool_check(_neq(containsFunctionSymbol(curIdentifierStr), 1)))
+            {
+                //_ = printError($"Undefined function '{Program.ReadString(curIdentifierStr, 128)}' at line {Lexer_getLastValidLine()}.");
+                set result = 0;
+                goto END;
+            }
+            set curIdentifierStr = memRead(getFunctionSymbol_ptr(curIdentifierStr));
+            _ = markFunctionSymbolAsReferenced(curIdentifierStr, Lexer_getLastValidLine());
+            _ = consumeToken();
+            set oldParamCount = getParamCount();
+            _ = setParamCount(0);
+            if (__bool_check(_neq(parseFunctionInvocationTail(), 1)))
+            {
+                set result = 0;
+                goto END;
+            }
+            if (__bool_check(_neq(matchFunctionSymbolParamCount(curIdentifierStr, getParamCount()), 1)))
+            {
+                //_ = printError($"Invalid number of arguments for function '{Program.ReadString(curIdentifierStr, 128)}' at line {Lexer_getLastValidLine()}.");
+                set result = 0;
+                goto END;
+            }
+            _ = IL_Emitter_emit_call(curIdentifierStr, getParamCount());
+            _ = setParamCount(oldParamCount);
+
+            goto END;
+        }
+        else
+        {
+            if (__bool_check(_neq(containsFunctionScopeSymbol(curIdentifierStr), 1)))
+            {
+                //_ = printError($"Undefined symbol '{Program.ReadString(curIdentifierStr, 128)}' at line {Lexer_getLastValidLine()}.");
+                set result = 0;
+                goto END;
+            }
+            set symbol = getFunctionScopeSymbol_ptr(curIdentifierStr);
+            if (__bool_check(_eq(memRead(symbol_getField_ptr(symbol, 1)), 1))) // SymbolType.ARGUMENT_VARIABLE
+            {
+                _ = IL_Emitter_emit_loadArgVar(memRead(symbol_getField_ptr(symbol, 3))); // symbol.scopeDepth
+                goto END;
+            }
+            if (__bool_check(_eq(memRead(symbol_getField_ptr(symbol, 1)), 2))) // SymbolType.LOCAL_VARIABLE
+            {
+                _ = IL_Emitter_emit_loadLocalVar(memRead(symbol_getField_ptr(symbol, 3))); // symbol.scopeDepth
+                goto END;
+            }
+        }
+    }
+    else
+    {
+        //_ = printError($"Expected expression at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+    }
+
+END:
     return result;
 }
-
 
 func parseBooleanExpression() -> Int
 {
@@ -3661,19 +4556,97 @@ func parseBooleanExpression() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(20))) // TokenType.BOOL_CHECK
+    {
+        //_ = printError($"Expected boolean expression after '(' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(10))) // TokenType.L_PAREN
+    {
+        //_ = printError($"Expected boolean expression after '__bool_check' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parsePrimaryExpression(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        //_ = printError($"Expected ')' after expression at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+    _ = IL_Emitter_emit_boolCheck();
+
+END:
     return result;
 }
-
 
 func parseFunctionInvocation() -> Int
 {
     var result: Int;
+    var funcName: Int;
+    var oldParamCount: Int;
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(0))) // TokenType.IDENTIFIER
+    {
+        //_ = printError($"Expected identifier after '=' at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    set funcName = _add(getTmpBuffer_ptr(), 128); // s_tmpBuff2_ptr
+    _ = strCpy(getCurTokenValue_ptr(), funcName);
+    if (__bool_check(_neq(containsFunctionSymbol(funcName), 1)))
+    {
+        //_ = printError($"Undefined function '{Program.ReadString(funcName, 128)}' at line {Lexer_getLastValidLine()}.");
+        set result = 0;
+        goto END;
+    }
+    set funcName = memRead(getFunctionSymbol_ptr(funcName));
+    _ = markFunctionSymbolAsReferenced(funcName, Lexer_getLastValidLine());
+    _ = consumeToken();
+
+    if (__bool_check(notMatchTokenType(10))) // TokenType.L_PAREN
+    {
+        //_ = printError($"Expected '(' after identifier at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+    set oldParamCount = getParamCount();
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parseFunctionInvocationTail(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+
+    if (__bool_check(_neq(matchFunctionSymbolParamCount(funcName, getParamCount()), 1)))
+    {
+        //_ = printError($"Invalid number of arguments for function '{Program.ReadString(funcName, 128)}' at line {Lexer_getLastValidLine()}.");
+        set result = 0;
+        goto END;
+    }
+
+    _ = IL_Emitter_emit_call(funcName, getParamCount());
+    _ = setParamCount(oldParamCount);
+
+END:
     return result;
 }
-
 
 func parseFunctionInvocationTail() -> Int
 {
@@ -3681,9 +4654,26 @@ func parseFunctionInvocationTail() -> Int
 
     set result = 1;
 
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        if (__bool_check(_neq(parseFunctionArgumentList(), 1)))
+        {
+            set result = 0;
+            goto END;
+        }
+    }
+
+    if (__bool_check(notMatchTokenType(11))) // TokenType.R_PAREN
+    {
+        //_ = printError($"Expected ')' after argument list at line {Lexer_getLastValidLine()}. Found '{Program.ReadString(getCurTokenValue_ptr(), 128)}'");
+        set result = 0;
+        goto END;
+    }
+    _ = consumeToken();
+
+END:
     return result;
 }
-
 
 func parseFunctionArgumentList() -> Int
 {
@@ -3691,16 +4681,50 @@ func parseFunctionArgumentList() -> Int
 
     set result = 1;
 
+    if (__bool_check(_neq(parseFunctionArgument(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = incParamCount();
+
+LOOP:
+    if (__bool_check(notMatchTokenType(16))) // TokenType.COMMA
+    {
+        goto END;
+    }
+
+    _ = consumeToken();
+    if (__bool_check(_neq(parseFunctionArgument(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = incParamCount();
+
+    goto LOOP;
+
+END:
     return result;
 }
-
 
 func parseFunctionArgument() -> Int
 {
     var result: Int;
+    var oldParamCount: Int;
 
     set result = 1;
 
+    set oldParamCount = getParamCount();
+    _ = setParamCount(0);
+    if (__bool_check(_neq(parsePrimaryExpression(), 1)))
+    {
+        set result = 0;
+        goto END;
+    }
+    _ = setParamCount(oldParamCount);
+
+END:
     return result;
 }
 
