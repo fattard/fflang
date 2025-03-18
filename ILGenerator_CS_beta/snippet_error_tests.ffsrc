@@ -1,0 +1,90 @@
+return 0; // Misplaced return out of a function
+
+using func add(a: Int, b: Int) -> Int;
+using func readMemory(addr: Int) -> Int         // Mssing semicolon
+using func writeMemory(addr: Int, data: Int)    // Missing return type
+
+func main() -> Int
+{
+    var 1a: Int;                // Invalid identifier start (digit)
+    var a: Int;
+    var b: Int;
+    var c: Int;
+
+    set a = 5                   // Missing semicolon
+
+    set b = -5;                 // Invalid symbol -
+
+    set a = 9999999999;         // Integer overflow
+
+
+LOOP:
+    LOOP: set a = 15;           // Duplicate label
+
+    goto UNDEFINED;             // Goto to undefined label
+
+    set e = 10;                 // Undeclared identifier
+
+    set c = add a, b;           // Function invocation with missing parentheses
+
+    if (b)                      // If without __bool_check
+    {
+    INNER_LABEL:
+        set c = 11;
+    }
+
+    _ = writeMemory(1, c);
+
+    else                        // Else without matching if
+    {
+        writeMemory(1, c);      // Missing explicit discard statement
+    }
+
+    return 0;                   // Return statement not last statement (invalid here)
+
+    { var x: Int; 123; }        // Unexpected token
+
+    var y: Int;                 // Invalid statement (declaring var after var block)
+
+    set c = readMemory();       // Invalid function invoke (wrong number of arguments)
+
+    func nestedFunc(a: Int) -> Int   // Unexpected func declaration
+    {
+        return 0;
+    }
+
+    set b = sub(b, 1);          // Undeclared function sub
+
+    set a = add(c, 2);          // Forward declared but never defined
+
+    goto INNER_LABEL;           // Invalid goto going to inner scope
+
+    if (__bool_check(b))
+    {
+LOOP_INF:
+        goto LOOP_INF;          // Circular goto (infinite loop warning, optional)
+    }
+
+                                // Missing return statement
+
+}
+
+func test(a: Int, b: Int, c: int) -> Int  // Invalid type name 'int'
+{
+    return 1;
+    return 2;                   // Multiple return statements
+}
+
+func emptyFunc() -> Int {}      // Empty function body (missing return)
+
+func test2(t) -> Int            // Missing parameter type
+{
+    return 0;
+}
+
+func writeMemory(addr: Int, data: Int, extra: Int) -> Int  // Definion with a different number of parameter from declaration
+{
+    return 0;
+}
+
+func readMemory(addr: Int) -> Int { return 1; }
