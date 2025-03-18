@@ -302,7 +302,7 @@ FF_MAIN:
         int exitCode = ILGenerator.main();
         // -------------------------
 
-        System.IO.File.WriteAllText("FFLang_Program.il", ReadString(655360, 262144));
+        System.IO.File.WriteAllText("FFLang_Program.il", ReadString(671744, 360448));
 
         System.IO.File.WriteAllBytes(ramDataFile, s_RAM);
 

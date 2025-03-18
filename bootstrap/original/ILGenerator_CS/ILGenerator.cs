@@ -73,9 +73,9 @@
     // s_IL_Emitter_baseILEndTxt_ptr       = g_offset + 509952 (max len:  1 KB)
     // s_IL_Emitter_RuntimeJsonTxt_ptr     = g_offset + 510976 (max len:  1 KB)
     //
-    // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 128 KB) [input FFLang source]
+    // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 144 KB) [input FFLang source]
     //
-    // s_IL_Emitter_strBuffer_ptr          = g_offset + 655360 (max len: 256 KB) [output IL source]
+    // s_IL_Emitter_strBuffer_ptr          = g_offset + 671744 (max len: 352 KB) [output IL source]
     //
 
 
@@ -2400,16 +2400,16 @@
             goto END;
         }
 
-        if (__bool_check(_neq(containsFunctionScopeSymbol(slotOffset), 1)))
+        if (__bool_check(_neq(containsFunctionScopeSymbol(memRead(slotOffset)), 1)))
         {
-            _ = printError($"Use of undefined label symbol '{Program.ReadString(slotOffset, 128)}' at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
+            _ = printError($"Use of undefined label symbol '{Program.ReadString(memRead(slotOffset), 128)}' at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
             /* set */ result = 1;
             goto END;
         }
 
         if (__bool_check(_gt(memRead(symbol_getField_ptr(getFunctionScopeSymbol_ptr(slotOffset),2)) ,memRead(symbol_getField_ptr(slotOffset, 2)))))
         {
-            _ = printError($"Label '{Program.ReadString(slotOffset, 128)}' is not available at current scope at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
+            _ = printError($"Label '{Program.ReadString(memRead(slotOffset), 128)}' is not available at current scope at line {memRead(symbol_getField_ptr(slotOffset, 2))}.");
             /* set */ result = 1;
             goto END;
         }
@@ -2631,8 +2631,8 @@
 
         /* set */ result = 1;
 
-        // Ignore '\0'
-        if (__bool_check(_eq(c, 0)))
+        // Ignore '\0' and '\r'
+        if (__bool_check(_or(_eq(c, 0), _eq(c, 13))))
         {
             goto END;
         }
@@ -2642,10 +2642,10 @@
         /* set */ strBuffer = IL_Emitter_getStrBuffer_ptr();
         /* set */ pos = IL_Emitter_getStrBuffer_pos();
 
-        if (__bool_check(_gte(pos, 262144))) // max len 256 KB
+        if (__bool_check(_gte(pos, 360448))) // max len 352 KB
         {
             /* set */ result = 0;
-            _ = printError($"The IL_Emitter strBuffer limit is {262144} bytes");
+            _ = printError($"The IL_Emitter strBuffer limit is {360448} bytes");
             goto END;
         }
 
@@ -2837,9 +2837,7 @@
         /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
         /* set */ result = _and(result, IL_Emitter_appendTxt(IL_Emitter_getGlobalFunctionsNamespaceStr()));
-        /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendTxt(getBuiltin_boolCheck()));
-        /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendChar(40));  // '('
         /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
         /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
@@ -3391,11 +3389,13 @@
 
         /* set */ g_offset = 0;
 
-        // Clean s_IL_Emitter_strBuffer - 256 KB length
-        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 262144);
+        // Clean s_IL_Emitter_strBuffer - 352 KB length
+        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 360448);
         _ = memWrite(_add(g_offset, 284), 0); // s_IL_Emitter_strBuffer_pos = 0
 
         /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
+        /* set */ result = _and(result, IL_Emitter_appendChar(13)); // '\r'
+        /* set */ result = _and(result, IL_Emitter_appendChar(10)); // '\n'
 
         //TODO: set custom ramBinLength size
 
@@ -3408,6 +3408,8 @@
         var result = (int)default;
 
         /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILEndTxt_ptr());
+        /* set */ result = _and(result, IL_Emitter_appendChar(13)); // '\r'
+        /* set */ result = _and(result, IL_Emitter_appendChar(10)); // '\n'
 
         return result;
     }
@@ -3438,7 +3440,7 @@
         _ = Lexer_resetTokenStrBuff_pos();
 
         /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-        if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
+        if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
         {
             /* set */ tokenType = 21; // TokenType.EOF_TOKEN
             _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3457,7 +3459,7 @@
 
             /* set */ pos = Lexer_incPos();
             /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-            if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
+            if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
             {
                 /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                 _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3478,7 +3480,7 @@
                 {
                     /* set */ pos = Lexer_incPos();
                     /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
+                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
                     {
                         /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                         _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3497,7 +3499,7 @@
             _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
 
         LOOP_IDENTIFIER:
-            if (__bool_check(_or(isLetter(c), _eq(c, 95)))) // letter || '_'
+            if (__bool_check(_or(_or(isLetter(c), isDigit(c)), _eq(c, 95)))) // letter || digit || '_'
             {
                 /* set */ readCount = Lexer_tokenBufferAppendChar(c);
                 if (__bool_check(_gte(c, 256)))
@@ -3508,7 +3510,7 @@
                 }
                 /* set */ pos = Lexer_incPos();
                 /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3625,7 +3627,7 @@
                 }
                 /* set */ pos = Lexer_incPos();
                 /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 131072)))) // '\0' || >= 128 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3699,7 +3701,7 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-            if (__bool_check(_and(_neq(c, 0), _lt(pos, 131072)))) // != '\0' && < 128 KB
+            if (__bool_check(_and(_neq(c, 0), _lt(pos, 147456)))) // != '\0' && < 144 KB
             {
                 if (__bool_check(_eq(c, 62))) // '>'
                 {
@@ -3772,13 +3774,6 @@
         /* set */ result = 1;
 
         _ = skipUTF8BOMMark(); // Skips UTF8 BOM mark, if any
-
-    #if false
-        while (getNextToken() < 21)
-        {
-            _ = printMessage($"{getCurTokenType()} {Program.ReadString(getCurTokenValue_ptr(), 128)}");
-        }
-    #endif
 
         _ = consumeToken(); // Initialize s_curToken
 
@@ -4454,7 +4449,7 @@
             /* set */ result = 0;
             goto END;
         }
-        /* set */ varName = _add(getTmpBuffer_ptr(), 128); // s_tmpBuff2_ptr
+        /* set */ varName = memRead(getFunctionScopeSymbol_ptr(getCurTokenValue_ptr()));
         _ = strCpy(getCurTokenValue_ptr(), varName);
         _ = consumeToken();
 
@@ -5054,7 +5049,7 @@
         _ = memWrite(_add(g_offset, 248), _add(g_offset, 100352)); // s_typeNamesTbl_ptr
         _ = memWrite(_add(g_offset, 256), _add(g_offset, 495616)); // s_typeNamesTbl_names_ptr
 
-        _ = memWrite(_add(g_offset, 280), _add(g_offset, 655360)); // s_IL_Emitter_strBuffer_ptr
+        _ = memWrite(_add(g_offset, 280), _add(g_offset, 671744)); // s_IL_Emitter_strBuffer_ptr
         _ = memWrite(_add(g_offset, 288), _add(g_offset, 499712)); // s_IL_Emitter_baseILBeginTxt_ptr
         _ = memWrite(_add(g_offset, 292), _add(g_offset, 509952)); // s_IL_Emitter_baseILEndTxt_ptr
         _ = memWrite(_add(g_offset, 296), _add(g_offset, 510976)); // s_IL_Emitter_RuntimeJsonTxt_ptr
