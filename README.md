@@ -29,7 +29,7 @@ func computeFactorial(n: Int) -> Int
     return result;
 }
 ```
-See a fully working snippet [here](snippet.txt).
+See a fully working snippet [here](snippet.ffsrc).
 
 ### General
 - **Type System**: Statically typed.
