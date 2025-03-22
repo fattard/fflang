@@ -1,4 +1,6 @@
-﻿internal partial class ILGenerator
+﻿using static Builtins;
+
+internal static class ILGenerator
 {
     // === Offset allocation for global variables
     //
@@ -7,6 +9,7 @@
     // & s_ramBinLength_MB                 := g_offset + 64
     // & s_isDebugConfig                   := g_offset + 68
     // & s_tmpBuff_ptr                     := g_offset + 72
+    // & s_staticStrTbl_ptr                := g_offset + 76
     //
     // & s_curToken_type                   := g_offset + 120
     // & s_curToken_value_ptr              := g_offset + 124
@@ -72,6 +75,8 @@
     // s_IL_Emitter_baseILBeginTxt_ptr     = g_offset + 499712 (max len: 10 KB)
     // s_IL_Emitter_baseILEndTxt_ptr       = g_offset + 509952 (max len:  1 KB)
     // s_IL_Emitter_RuntimeJsonTxt_ptr     = g_offset + 510976 (max len:  1 KB)
+    //
+    // s_staticStrTbl_ptr                  = g_offset + 512000 (max len: 12 KB)
     //
     // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 512 KB) [input FFLang source]
     //
@@ -501,6 +506,33 @@
         return memRead(_add(g_offset, 72)); // s_tmpBuff_ptr
     }
 
+    public static int getStaticStrTbl_ptr()
+    //func getStaticStrTbl_ptr() -> Int
+    {
+        var g_offset = (int)default;
+        /* set */ g_offset = 0;
+
+        return memRead(_add(g_offset, 76)); // s_staticStrTbl_ptr
+    }
+
+    public static int getStaticStr(int idx)
+    //func getStaticStr(idx: Int) -> Int
+    {
+        var tbl = (int)default;
+        var result = (int)default;
+        /* set */ tbl = getStaticStrTbl_ptr();
+
+        if (__bool_check(_gte(idx, 256)))
+        {
+            goto END;
+        }
+
+        /* set */ result = memRead(_add(tbl, _mul(idx, __INT_WIDTH_BYTES__))); // s_staticStrTbl[idx]
+
+    END:
+        return result;
+    }
+
     #endregion Tmp Buffer
 
     #region Token struct
@@ -855,446 +887,121 @@
     public static int getTypeName_Int()
     //func getTypeName_Int() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0),  73); // 'I'
-        _ = memWrite8(_add(tmpBuff, 1), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(6);
     }
 
     public static int getMacroName_int_max()
     //func getMacroName_int_max() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
-        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  6), 77); // 'M'
-        _ = memWrite8(_add(tmpBuff,  7), 65); // 'A'
-        _ = memWrite8(_add(tmpBuff,  8), 88); // 'X'
-        _ = memWrite8(_add(tmpBuff,  9), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 10), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 11),  0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(7);
     }
 
     public static int getMacroName_int_width_bits()
     //func getMacroName_int_width_bits() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
-        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  6), 87); // 'W'
-        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  8), 68); // 'D'
-        _ = memWrite8(_add(tmpBuff,  9), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff, 10), 72); // 'H'
-        _ = memWrite8(_add(tmpBuff, 11), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 12), 66); // 'B'
-        _ = memWrite8(_add(tmpBuff, 13), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff, 14), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff, 15), 83); // 'S'
-        _ = memWrite8(_add(tmpBuff, 16), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 17), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 18),  0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(9);
     }
 
     public static int getMacroName_int_width_bytes()
     //func getMacroName_int_width_bytes() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
-        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  6), 87); // 'W'
-        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  8), 68); // 'D'
-        _ = memWrite8(_add(tmpBuff,  9), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff, 10), 72); // 'H'
-        _ = memWrite8(_add(tmpBuff, 11), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 12), 66); // 'B'
-        _ = memWrite8(_add(tmpBuff, 13), 89); // 'Y'
-        _ = memWrite8(_add(tmpBuff, 14), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff, 15), 69); // 'E'
-        _ = memWrite8(_add(tmpBuff, 16), 83); // 'S'
-        _ = memWrite8(_add(tmpBuff, 17), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 18), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 19),  0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(10);
     }
 
     public static int getMacroName_int_sign_bit_mask()
     //func getMacroName_int_sign_bit_mask() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  3), 78); // 'N'
-        _ = memWrite8(_add(tmpBuff,  4), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff,  5), 95); // '_'
-        _ = memWrite8(_add(tmpBuff,  6), 83); // 'S'
-        _ = memWrite8(_add(tmpBuff,  7), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff,  8), 71); // 'G'
-        _ = memWrite8(_add(tmpBuff,  9), 78); // 'N'
-        _ = memWrite8(_add(tmpBuff, 10), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 11), 66); // 'B'
-        _ = memWrite8(_add(tmpBuff, 12), 73); // 'I'
-        _ = memWrite8(_add(tmpBuff, 13), 84); // 'T'
-        _ = memWrite8(_add(tmpBuff, 14), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 15), 77); // 'M'
-        _ = memWrite8(_add(tmpBuff, 16), 65); // 'A'
-        _ = memWrite8(_add(tmpBuff, 17), 83); // 'S'
-        _ = memWrite8(_add(tmpBuff, 18), 75); // 'K'
-        _ = memWrite8(_add(tmpBuff, 19), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 20), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 21),  0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(11);
     }
 
     public static int getKeyword_using()
     //func getKeyword_using() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff, 1), 115); // 's'
-        _ = memWrite8(_add(tmpBuff, 2), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 3), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 4), 103); // 'g'
-        _ = memWrite8(_add(tmpBuff, 5),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(12);
     }
 
     public static int getKeyword_func()
     //func getKeyword_func() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 102); // 'f'
-        _ = memWrite8(_add(tmpBuff, 1), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff, 2), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 3),  99); // 'c'
-        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(13);
     }
 
     public static int getKeyword_var()
     //func getKeyword_var() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 118); // 'v'
-        _ = memWrite8(_add(tmpBuff, 1),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff, 2), 114); // 'r'
-        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(14);
     }
 
     public static int getKeyword_set()
     //func getKeyword_set() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 115); // 's'
-        _ = memWrite8(_add(tmpBuff, 1), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 3),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(15);
     }
 
     public static int getKeyword_return()
     //func getKeyword_return() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 114); // 'r'
-        _ = memWrite8(_add(tmpBuff, 1), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 3), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff, 4), 114); // 'r'
-        _ = memWrite8(_add(tmpBuff, 5), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 6),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(16);
     }
 
     public static int getKeyword_goto()
     //func getKeyword_goto() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 103); // 'g'
-        _ = memWrite8(_add(tmpBuff, 1), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff, 2), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 3), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(17);
     }
 
     public static int getKeyword_if()
     //func getKeyword_if() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 1), 102); // 'f'
-        _ = memWrite8(_add(tmpBuff, 2),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(18);
     }
 
     public static int getKeyword_else()
     //func getKeyword_else() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 1), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff, 2), 115); // 's'
-        _ = memWrite8(_add(tmpBuff, 3), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 4),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(19);
     }
 
     public static int getKeyword_underscoreSymbol()
     //func getKeyword_underscoreSymbol() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0), 95); // '_'
-        _ = memWrite8(_add(tmpBuff, 1),  0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(20);
     }
 
-    public static int getBuiltin_boolCheck()
-    //func getBuiltin_boolCheck() -> Int
+    public static int get_boolCheck()
+    //func get_boolCheck() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff,  3), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff,  4), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  6),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  7),  99); // 'c'
-        _ = memWrite8(_add(tmpBuff,  8), 104); // 'h'
-        _ = memWrite8(_add(tmpBuff,  9), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 10),  99); // 'c'
-        _ = memWrite8(_add(tmpBuff, 11), 107); // 'k'
-        _ = memWrite8(_add(tmpBuff, 12),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(1);
     }
 
     public static int getBuiltin_dbg_int()
     //func getBuiltin_dbg_int() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff, 0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 2), 100); // 'd'
-        _ = memWrite8(_add(tmpBuff, 3),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff, 4), 103); // 'g'
-        _ = memWrite8(_add(tmpBuff, 5),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 6), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 7), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 8), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 9),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(128);
     }
 
     public static int getBuiltin_add()
     //func getBuiltin_add() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
-        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 14),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff, 15), 100); // 'd'
-        _ = memWrite8(_add(tmpBuff, 16), 100); // 'd'
-        _ = memWrite8(_add(tmpBuff, 17),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(2);
     }
 
     public static int getBuiltin_nand()
     //func getBuiltin_nand() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
-        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 14), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 15),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff, 16), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 17), 100); // 'd'
-        _ = memWrite8(_add(tmpBuff, 18),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(3);
     }
 
     public static int getBuiltin_mem_read()
     //func getBuiltin_mem_read() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
-        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 14), 109); // 'm'
-        _ = memWrite8(_add(tmpBuff, 15), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 16), 109); // 'm'
-        _ = memWrite8(_add(tmpBuff, 17),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 18), 114); // 'r'
-        _ = memWrite8(_add(tmpBuff, 19), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 20),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff, 21), 100); // 'd'
-        _ = memWrite8(_add(tmpBuff, 22),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(4);
     }
 
     public static int getBuiltin_mem_write()
     //func getBuiltin_mem_write() -> Int
     {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(tmpBuff,  0),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  1),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  2),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff,  3), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff,  4), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  5), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  6), 116); // 't'
-        _ = memWrite8(_add(tmpBuff,  7), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff,  8), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff,  9),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 10), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 11), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 12), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 13),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 14), 109); // 'm'
-        _ = memWrite8(_add(tmpBuff, 15), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 16), 109); // 'm'
-        _ = memWrite8(_add(tmpBuff, 17),  95); // '_'
-        _ = memWrite8(_add(tmpBuff, 18), 119); // 'w'
-        _ = memWrite8(_add(tmpBuff, 19), 114); // 'r'
-        _ = memWrite8(_add(tmpBuff, 20), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 21), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 22), 101); // 'e'
-        _ = memWrite8(_add(tmpBuff, 23),   0); // '\0'
-
-        return tmpBuff;
+        return getStaticStr(5);
     }
 
     public static int replaceMacro_int_width_bytes(int dest_ptr)
@@ -1989,13 +1696,7 @@
         var mainName = (int)default;
         var result = (int)default;
 
-        /* set */ mainName = getTmpBuffer_ptr();
-
-        _ = memWrite8(_add(mainName, 0), 109); // 'm'
-        _ = memWrite8(_add(mainName, 1),  97); // 'a'
-        _ = memWrite8(_add(mainName, 2), 105); // 'i'
-        _ = memWrite8(_add(mainName, 3), 110); // 'n'
-        _ = memWrite8(_add(mainName, 4),   0); // '\0'
+        /* set */ mainName = getStaticStr(0); // main
 
         if (__bool_check(_and(_and(containsFunctionSymbol(mainName), matchFunctionSymbolParamCount(mainName, 0)), isFunctionSymbolDefinitionFound(mainName))))
         {
@@ -2583,44 +2284,6 @@
         return memRead(_add(g_offset, 296)); // s_IL_Emitter_RuntimeJsonTxt_ptr
     }
 
-    public static int IL_Emitter_getGlobalFunctionsNamespaceStr()
-    //func IL_Emitter_getGlobalFunctionsNamespaceStr() -> Int
-    {
-        var tmpBuff = (int)default;
-
-        /* set */ tmpBuff = getTmpBuffer_ptr();
-        /* set */ tmpBuff = _add(tmpBuff, 128); // s_tmpBuff2_ptr
-
-        _ = memWrite8(_add(tmpBuff,  0),  70); // 'F'
-        _ = memWrite8(_add(tmpBuff,  1),  70); // 'F'
-        _ = memWrite8(_add(tmpBuff,  2),  76); // 'L'
-        _ = memWrite8(_add(tmpBuff,  3),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff,  4), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff,  5), 103); // 'g'
-        _ = memWrite8(_add(tmpBuff,  6),  95); // '_'
-        _ = memWrite8(_add(tmpBuff,  7),  71); // 'G'
-        _ = memWrite8(_add(tmpBuff,  8), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff,  9), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff, 10),  98); // 'b'
-        _ = memWrite8(_add(tmpBuff, 11),  97); // 'a'
-        _ = memWrite8(_add(tmpBuff, 12), 108); // 'l'
-        _ = memWrite8(_add(tmpBuff, 13),  46); // '.'
-        _ = memWrite8(_add(tmpBuff, 14),  70); // 'F'
-        _ = memWrite8(_add(tmpBuff, 15), 117); // 'u'
-        _ = memWrite8(_add(tmpBuff, 16), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 17),  99); // 'c'
-        _ = memWrite8(_add(tmpBuff, 18), 116); // 't'
-        _ = memWrite8(_add(tmpBuff, 19), 105); // 'i'
-        _ = memWrite8(_add(tmpBuff, 20), 111); // 'o'
-        _ = memWrite8(_add(tmpBuff, 21), 110); // 'n'
-        _ = memWrite8(_add(tmpBuff, 22), 115); // 's'
-        _ = memWrite8(_add(tmpBuff, 23),  58); // ':'
-        _ = memWrite8(_add(tmpBuff, 24),  58); // ':'
-        _ = memWrite8(_add(tmpBuff, 25),   0); // '\0'
-
-        return tmpBuff;
-    }
-
     public static int IL_Emitter_appendChar(int c)
     //func IL_Emitter_appendChar(c: Int) -> Int
     {
@@ -2716,22 +2379,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-        /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(138))); // inst br
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendTxt(labelStr_ptr));
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
@@ -2751,29 +2399,10 @@
         /* set */ result = 1;
         /* set */ last_i = _sub(argsCount, 1);
 
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(141))); // inst call
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendTxt(IL_Emitter_getGlobalFunctionsNamespaceStr()));
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(131))); // global functions namespace
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendTxt(functionNameStr_ptr));
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
@@ -2785,11 +2414,7 @@
             goto ARGS_TAIL;
         }
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
 
         if (__bool_check(_lt(i, last_i)))
         {
@@ -2815,35 +2440,13 @@
 
         /* set */ result = 1;
 
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(141))); // inst call
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(130))); // bool
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendTxt(IL_Emitter_getGlobalFunctionsNamespaceStr()));
-        /* set */ result = _and(result, IL_Emitter_appendTxt(getBuiltin_boolCheck()));
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(131))); // global functions namespace
+        /* set */ result = _and(result, IL_Emitter_appendTxt(get_boolCheck()));
         /* set */ result = _and(result, IL_Emitter_appendChar(40));  // '('
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
         /* set */ result = _and(result, IL_Emitter_appendChar(41));  // ')'
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -2858,33 +2461,9 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-        /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-        /* set */ result = _and(result, IL_Emitter_appendChar(102)); // 'f'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(101)); // 'e'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(139))); // inst brfalse
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
-        /* set */ result = _and(result, IL_Emitter_appendChar(73));  // 'I'
-        /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-        /* set */ result = _and(result, IL_Emitter_appendChar(65));  // 'A'
-        /* set */ result = _and(result, IL_Emitter_appendChar(76));  // 'L'
-        /* set */ result = _and(result, IL_Emitter_appendChar(83));  // 'S'
-        /* set */ result = _and(result, IL_Emitter_appendChar(69));  // 'E'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(36));  // '$'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(136))); // IF_FALSE_$
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(ifLabelCounter)));
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
@@ -2902,31 +2481,9 @@
 
         if (__bool_check(_eq(hasBlock, 1)))
         {
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-            /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-            /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-            /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+            /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(138))); // inst br
             /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
-            /* set */ result = _and(result, IL_Emitter_appendChar(73));  // 'I'
-            /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-            /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-            /* set */ result = _and(result, IL_Emitter_appendChar(69));  // 'E'
-            /* set */ result = _and(result, IL_Emitter_appendChar(78));  // 'N'
-            /* set */ result = _and(result, IL_Emitter_appendChar(68));  // 'D'
-            /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-            /* set */ result = _and(result, IL_Emitter_appendChar(36));  // '$'
+            /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(137))); // IF_END_$
             /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(ifLabelCounter)));
             /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
             /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
@@ -2934,16 +2491,7 @@
         }
 
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
-        /* set */ result = _and(result, IL_Emitter_appendChar(73));  // 'I'
-        /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-        /* set */ result = _and(result, IL_Emitter_appendChar(65));  // 'A'
-        /* set */ result = _and(result, IL_Emitter_appendChar(76));  // 'L'
-        /* set */ result = _and(result, IL_Emitter_appendChar(83));  // 'S'
-        /* set */ result = _and(result, IL_Emitter_appendChar(69));  // 'E'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(36));  // '$'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(136))); // IF_FALSE_$
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(ifLabelCounter)));
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendChar(58));  // ':'
@@ -2961,14 +2509,7 @@
         /* set */ result = 1;
 
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
-        /* set */ result = _and(result, IL_Emitter_appendChar(73));  // 'I'
-        /* set */ result = _and(result, IL_Emitter_appendChar(70));  // 'F'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(69));  // 'E'
-        /* set */ result = _and(result, IL_Emitter_appendChar(78));  // 'N'
-        /* set */ result = _and(result, IL_Emitter_appendChar(68));  // 'D'
-        /* set */ result = _and(result, IL_Emitter_appendChar(95));  // '_'
-        /* set */ result = _and(result, IL_Emitter_appendChar(36));  // '$'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(137))); // IF_END_$
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(ifLabelCounter)));
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
         /* set */ result = _and(result, IL_Emitter_appendChar(58));  // ':'
@@ -2985,14 +2526,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(112)); // 'p'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(112)); // 'p'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(143))); // inst pop
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
 
@@ -3006,14 +2540,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-        /* set */ result = _and(result, IL_Emitter_appendChar(101)); // 'e'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(142))); // inst ret
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
 
@@ -3027,22 +2554,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(52));  // '4'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(144))); // inst ldc.i4
         /* set */ result = _and(result, IL_Emitter_appendTxt(vStr_ptr));
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3057,22 +2569,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(146))); // inst ldloc.s
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(index)));
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3087,22 +2584,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-        /* set */ result = _and(result, IL_Emitter_appendChar(103)); // 'g'
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(145))); // inst ldarg.s
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(index)));
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3117,22 +2599,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(148))); // inst stloc.s
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(index)));
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3147,22 +2614,7 @@
 
         /* set */ result = 1;
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(114)); // 'r'
-        /* set */ result = _and(result, IL_Emitter_appendChar(103)); // 'g'
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(147))); // inst starg.s
         /* set */ result = _and(result, IL_Emitter_appendTxt(intToStr(index)));
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3180,43 +2632,9 @@
         /* set */ result = 1;
         /* set */ last_i = _sub(paramCount, 1);
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(109)); // 'm'
-        /* set */ result = _and(result, IL_Emitter_appendChar(101)); // 'e'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(104)); // 'h'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(132))); // method header
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(112)); // 'p'
-        /* set */ result = _and(result, IL_Emitter_appendChar(117)); // 'u'
-        /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(104)); // 'h'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
-        /* set */ result = _and(result, IL_Emitter_appendChar(101)); // 'e'
-        /* set */ result = _and(result, IL_Emitter_appendChar(98));  // 'b'
-        /* set */ result = _and(result, IL_Emitter_appendChar(121)); // 'y'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(103)); // 'g'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
         /* set */ result = _and(result, IL_Emitter_appendChar(39));  // '\''
@@ -3230,11 +2648,7 @@
             goto PARAMS_TAIL;
         }
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
 
         if (__bool_check(_lt(i, last_i)))
         {
@@ -3248,17 +2662,7 @@
     PARAMS_TAIL:
         /* set */ result = _and(result, IL_Emitter_appendChar(41));  // ')'
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(109)); // 'm'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(103)); // 'g'
-        /* set */ result = _and(result, IL_Emitter_appendChar(101)); // 'e'
-        /* set */ result = _and(result, IL_Emitter_appendChar(100)); // 'd'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(133))); // cil managed
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
 
@@ -3276,22 +2680,7 @@
         /* set */ result = _and(result, IL_Emitter_appendChar(13)); // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10)); // '\n'
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(109)); // 'm'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(120)); // 'x'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(107)); // 'k'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(134))); // .maxstack
         /* set */ result = _and(result, IL_Emitter_appendChar(56));  // '8'
         /* set */ result = _and(result, IL_Emitter_appendChar(13));  // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10));  // '\n'
@@ -3329,23 +2718,7 @@
         /* set */ result = 1;
         /* set */ last_i = _sub(count, 1);
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(32)); // ' '
-
-        /* set */ result = _and(result, IL_Emitter_appendChar(46));  // '.'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(111)); // 'o'
-        /* set */ result = _and(result, IL_Emitter_appendChar(99));  // 'c'
-        /* set */ result = _and(result, IL_Emitter_appendChar(97));  // 'a'
-        /* set */ result = _and(result, IL_Emitter_appendChar(108)); // 'l'
-        /* set */ result = _and(result, IL_Emitter_appendChar(115)); // 's'
-        /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(135))); // .localsinit
         /* set */ result = _and(result, IL_Emitter_appendChar(32));  // ' '
         /* set */ result = _and(result, IL_Emitter_appendChar(40));  // '('
 
@@ -3355,11 +2728,7 @@
             goto LOCALS_TAIL;
         }
 
-        /* set */ result = _and(result, IL_Emitter_appendChar(105)); // 'i'
-        /* set */ result = _and(result, IL_Emitter_appendChar(110)); // 'n'
-        /* set */ result = _and(result, IL_Emitter_appendChar(116)); // 't'
-        /* set */ result = _and(result, IL_Emitter_appendChar(51));  // '3'
-        /* set */ result = _and(result, IL_Emitter_appendChar(50));  // '2'
+        /* set */ result = _and(result, IL_Emitter_appendTxt(getStaticStr(129))); // int32
 
         if (__bool_check(_lt(i, last_i)))
         {
@@ -3389,8 +2758,8 @@
 
         /* set */ g_offset = 0;
 
-        // Clean s_IL_Emitter_strBuffer - 352 KB length
-        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 360448);
+        // Clean s_IL_Emitter_strBuffer - 1 MB length
+        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 1048576);
         _ = memWrite(_add(g_offset, 284), 0); // s_IL_Emitter_strBuffer_pos = 0
 
         /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
@@ -3573,7 +2942,7 @@
                 goto END;
             }
 
-            if (__bool_check(strEquals(tokenBuffer_ptr, getBuiltin_boolCheck())))
+            if (__bool_check(strEquals(tokenBuffer_ptr, get_boolCheck())))
             {
                 /* set */ tokenType = 20; // TokenType.BOOL_CHECK
                 goto END;
@@ -5034,6 +4403,7 @@
 
         // Write hardcoded pointers
         _ = memWrite(_add(g_offset, 72), _add(g_offset, 576)); // s_tmpBuff_ptr
+        _ = memWrite(_add(g_offset, 76), _add(g_offset, 512000)); // s_staticStrTbl_ptr
 
         _ = memWrite(_add(g_offset, 124), _add(g_offset, 320)); // s_curToken_value_ptr
         _ = memWrite(_add(g_offset, 140), _add(g_offset, 448)); // s_tokenStrBuff_ptr
