@@ -73,9 +73,9 @@
     // s_IL_Emitter_baseILEndTxt_ptr       = g_offset + 509952 (max len:  1 KB)
     // s_IL_Emitter_RuntimeJsonTxt_ptr     = g_offset + 510976 (max len:  1 KB)
     //
-    // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 144 KB) [input FFLang source]
+    // s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 512 KB) [input FFLang source]
     //
-    // s_IL_Emitter_strBuffer_ptr          = g_offset + 671744 (max len: 352 KB) [output IL source]
+    // s_IL_Emitter_strBuffer_ptr          = g_offset + 1048576 (max len: 1 MB) [output IL source]
     //
 
 
@@ -2642,10 +2642,10 @@
         /* set */ strBuffer = IL_Emitter_getStrBuffer_ptr();
         /* set */ pos = IL_Emitter_getStrBuffer_pos();
 
-        if (__bool_check(_gte(pos, 360448))) // max len 352 KB
+        if (__bool_check(_gte(pos, 1048576))) // max len 1 MB
         {
             /* set */ result = 0;
-            _ = printError($"The IL_Emitter strBuffer limit is {360448} bytes");
+            _ = printError($"The IL_Emitter strBuffer limit is {1048576} bytes");
             goto END;
         }
 
@@ -3440,7 +3440,7 @@
         _ = Lexer_resetTokenStrBuff_pos();
 
         /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-        if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
+        if (__bool_check(_or(_eq(c, 0), _gte(pos, 524288)))) // '\0' || >= 512 KB
         {
             /* set */ tokenType = 21; // TokenType.EOF_TOKEN
             _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3459,7 +3459,7 @@
 
             /* set */ pos = Lexer_incPos();
             /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-            if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
+            if (__bool_check(_or(_eq(c, 0), _gte(pos, 524288)))) // '\0' || >= 512 KB
             {
                 /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                 _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3480,7 +3480,7 @@
                 {
                     /* set */ pos = Lexer_incPos();
                     /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
+                    if (__bool_check(_or(_eq(c, 0), _gte(pos, 524288)))) // '\0' || >= 512 KB
                     {
                         /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                         _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3510,7 +3510,7 @@
                 }
                 /* set */ pos = Lexer_incPos();
                 /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 524288)))) // '\0' || >= 512 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3627,7 +3627,7 @@
                 }
                 /* set */ pos = Lexer_incPos();
                 /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-                if (__bool_check(_or(_eq(c, 0), _gte(pos, 147456)))) // '\0' || >= 144 KB
+                if (__bool_check(_or(_eq(c, 0), _gte(pos, 524288)))) // '\0' || >= 512 KB
                 {
                     /* set */ tokenType = 21; // TokenType.EOF_TOKEN
                     _ = memWrite8(tokenBuffer_ptr, 0); // s_tokenStrBuff[0] = '\0'
@@ -3701,7 +3701,7 @@
             /* set */ pos = Lexer_incPos();
             _ = Lexer_tokenBufferAppendChar(c);
             /* set */ c = memRead8(_add(srcTxt_ptr, pos));
-            if (__bool_check(_and(_neq(c, 0), _lt(pos, 147456)))) // != '\0' && < 144 KB
+            if (__bool_check(_and(_neq(c, 0), _lt(pos, 524288)))) // != '\0' && < 512 KB
             {
                 if (__bool_check(_eq(c, 62))) // '>'
                 {
@@ -5049,7 +5049,7 @@
         _ = memWrite(_add(g_offset, 248), _add(g_offset, 100352)); // s_typeNamesTbl_ptr
         _ = memWrite(_add(g_offset, 256), _add(g_offset, 495616)); // s_typeNamesTbl_names_ptr
 
-        _ = memWrite(_add(g_offset, 280), _add(g_offset, 671744)); // s_IL_Emitter_strBuffer_ptr
+        _ = memWrite(_add(g_offset, 280), _add(g_offset, 1048576)); // s_IL_Emitter_strBuffer_ptr
         _ = memWrite(_add(g_offset, 288), _add(g_offset, 499712)); // s_IL_Emitter_baseILBeginTxt_ptr
         _ = memWrite(_add(g_offset, 292), _add(g_offset, 509952)); // s_IL_Emitter_baseILEndTxt_ptr
         _ = memWrite(_add(g_offset, 296), _add(g_offset, 510976)); // s_IL_Emitter_RuntimeJsonTxt_ptr
