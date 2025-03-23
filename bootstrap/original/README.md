@@ -20,7 +20,7 @@ However, porting it directly to FFLang presented challenges due to the language'
 - Simulating the runtime environment, including a memory buffer for heap management.
 - Explicit, unbounded memory access.
 
-A structured [memory layout](memory_layout.txt) was developed, allocating space for variables, tables, and global data. Initially targeting 1 MB, the allocation was later increased to 2 MB to support larger IL code output (10K+ lines).
+A structured [memory layout](mem_layout.txt) was developed, allocating space for variables, tables, and global data. Initially targeting 1 MB, the allocation was later increased to 2 MB to support larger IL code output (10K+ lines).
 
 ### Splitting the Project for Efficiency
 To optimize code handling, the project was split into three programs:
