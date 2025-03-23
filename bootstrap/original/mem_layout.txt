@@ -1,0 +1,92 @@
+=== Estimate Memory Layout - 2MB ===
+
+globals data arena                  = g_offset          (max len: 2 KB)
+symbol tables arena                 = g_offset + 2048   (max len: 98 KB)
+symbol identifiers arena            = g_offset + 102400 (max len: 388 KB)
+IL base texts                       = g_offset + 499712 (max len: 12 KB)
+Static Strings                      = g_offset + 512000 (max len: 12 KB)
+
+FFLang source code input            = g_offset + 524288 (max len: 144 KB)
+IL generated source code output     = g_offset + 1048576 (max len: 352 KB)
+
+
+
+=== Offset allocation for global variables ===
+
+g_offset = 0
+
+& s_ramBinLength_MB                 := g_offset + 64
+& s_isDebugConfig                   := g_offset + 68
+& s_tmpBuff_ptr                     := g_offset + 72
+& s_staticStrTbl_ptr                := g_offset + 76
+
+& s_curToken_type                   := g_offset + 120
+& s_curToken_value_ptr              := g_offset + 124
+& s_curToken_line                   := g_offset + 128
+
+& s_tokenStrBuff_ptr                := g_offset + 140
+& s_tokenStrBuff_pos                := g_offset + 144
+
+& s_srcCodeTxt_ptr                  := g_offset + 160
+& s_pos                             := g_offset + 164
+& s_line                            := g_offset + 168
+& s_lastValidLine                   := g_offset + 172
+& s_curScopeDepth                   := g_offset + 176
+& s_inFunctionScope                 := g_offset + 180
+& s_paramCount                      := g_offset + 184
+& s_ifLabelCounter                  := g_offset + 188
+
+& s_symbol_sizeof                   := g_offset + 192
+& s_symbol_field_size               := g_offset + 196
+
+& s_functionsTbl_ptr                := g_offset + 200
+& s_functionsTbl_count              := g_offset + 204
+& s_functionsTbl_names_ptr          := g_offset + 208
+& s_functionsTbl_names_offset       := g_offset + 212
+& s_functionScopeTbl_ptr            := g_offset + 216
+& s_functionScopeTbl_count          := g_offset + 220
+& s_functionScopeTbl_names_ptr      := g_offset + 224
+& s_functionScopeTbl_names_offset   := g_offset + 228
+& s_unresolvedGotoTbl_ptr           := g_offset + 232
+& s_unresolvedGotoTbl_count         := g_offset + 236
+& s_unresolvedGotoTbl_names_ptr     := g_offset + 240
+& s_unresolvedGotoTbl_names_offset  := g_offset + 244
+& s_typeNamesTbl_ptr                := g_offset + 248
+& s_typeNamesTbl_count              := g_offset + 252
+& s_typeNamesTbl_names_ptr          := g_offset + 256
+& s_typeNamesTbl_names_offset       := g_offset + 260
+
+& s_IL_Emitter_strBuffer_ptr        := g_offset + 280
+& s_IL_Emitter_strBuffer_pos        := g_offset + 284
+& s_IL_Emitter_baseILBeginTxt_ptr   := g_offset + 288
+& s_IL_Emitter_baseILEndTxt_ptr     := g_offset + 292
+& s_IL_Emitter_RuntimeJsonTxt_ptr   := g_offset + 296
+
+
+=== Hardcoded pointers ===
+
+s_curToken_value_ptr                = g_offset + 320    (max len: 128 bytes)
+s_tokenStrBuff_ptr                  = g_offset + 448    (max len: 128 bytes)
+s_tmpBuff_ptr                       = g_offset + 576    (max len: 128 bytes)
+s_tmpBuff2_ptr                      = g_offset + 704    (max len: 128 bytes)
+s_tmpBuff3_ptr                      = g_offset + 832    (max len: 128 bytes)
+
+s_functionsTbl_ptr                  = g_offset + 2048   (max len: 16 KB)  ->  512 elements
+s_functionScopeTbl_ptr              = g_offset + 18432  (max len: 64 KB)  -> 2048 elements
+s_unresolvedGotoTbl_ptr             = g_offset + 83968  (max len: 16 KB)  ->  512 elements
+s_typeNamesTbl_ptr                  = g_offset + 100352 (max len:  1 KB)  ->   32 elements
+
+s_functionsTbl_names_ptr            = g_offset + 102400 (max len:  64 KB) ->  512 elements
+s_functionScopeTbl_names_ptr        = g_offset + 167936 (max len: 256 KB) -> 2048 elements
+s_unresolvedGotoTbl_names_ptr       = g_offset + 430080 (max len:  64 KB) ->  512 elements
+s_typeNamesTbl_names_ptr            = g_offset + 495616 (max len:   4 KB) ->   32 elements
+
+s_IL_Emitter_baseILBeginTxt_ptr     = g_offset + 499712 (max len: 10 KB)
+s_IL_Emitter_baseILEndTxt_ptr       = g_offset + 509952 (max len:  1 KB)
+s_IL_Emitter_RuntimeJsonTxt_ptr     = g_offset + 510976 (max len:  1 KB)
+
+s_staticStrTbl_ptr                  = g_offset + 512000 (max len: 12 KB)
+
+s_srcCodeTxt_ptr                    = g_offset + 524288 (max len: 512 KB) [input FFLang source]
+
+s_IL_Emitter_strBuffer_ptr          = g_offset + 1048576 (max len: 1 MB) [output IL source]
