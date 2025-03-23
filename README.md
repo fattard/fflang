@@ -142,6 +142,18 @@ dotnet FFLang_Program.dll
 At this stage, the project is not open for contributions. However, bug reports and feedback are always welcome.  
 Please feel free to open an issue if you encounter any bugs or have suggestions.
 
+#### Line ending configuration
+This repository uses mixed line endings, meaning that different files may contain a mix of LF (`\n`) and CRLF (`\r\n`). To prevent automatic conversion of line endings when checking out or committing files, you must configure Git to:
+- Checkout as-is: Preserve line endings when checking out files.
+- Commit as-is: Do not convert line endings when committing changes.
+
+To enforce this behavior, run the following command in your repository:
+
+```
+git config --local core.autocrlf false
+```
+By keeping this setting, you ensure that line endings remain consistent with the original files, avoiding unintended changes when committing.
+
 ### License
 
 All projects and contents within this repository, including tools, language source code, and related files, are licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

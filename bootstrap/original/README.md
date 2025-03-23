@@ -3,7 +3,7 @@
 ## Introduction
 The initial bootstrap of `FFLang` was achieved through C#, starting with the manually written `Parser_CS` beta project. Over time, this evolved into `ILGenerator_CS`, an IL code emitter capable of generating .NET IL applications.
 
-By combining the [base IL runtime](runtime_IL/FFLang_BaseIL.il), built-in FFLang implementations, and IL-generated code from the parser, a fully functional .NET application was created and executed.
+By combining the [base IL runtime](runtime_IL/FFLang_BaseIL.il), built-in FFLang implementations, and IL-generated code from the parser, a fully functional .NET application can be created and executed, from FFLang source code.
 
 ### Why C# as the First Path?
 The choice of C# was deliberate:
@@ -25,7 +25,7 @@ A structured [memory layout](mem_layout.txt) was developed, allocating space for
 ### Splitting the Project for Efficiency
 To optimize code handling, the project was split into three programs:
 1. **[PrepareStaticStrings.ffsrc](PrepareStaticStrings.ffsrc)**: Initializes FFLang keywords and constructs as static strings.
-2. **[PrepareStaticStrings_IL.ffsrc](PrepareStaticStrings_IL.ffsrc)**: Stores IL instructions and directives as static strings.
+2. **[PrepareStaticStrings_IL.ffsrc](PrepareStaticStrings_IL.ffsrc)**: Initializes IL instructions and directives as static strings.
 3. **[ILGenerator.ffsrc](ILGenerator.ffsrc)**: The core parser and IL code emitter.
 
 Since FFLang `version 0` lacks I/O support, manual intervention is required for input injection and output extraction. A shared `RAM.bin` file holds offsets for input and output, with [helper scripts](helper_scripts) (Python-based) streamlining the injection and extraction process.
@@ -56,7 +56,6 @@ Here are all the steps needed to achieve self-hosting using the C# path
 
 #### Step 2 - Generate the IL Generator Using FFLang
 - Compile the three key components of the IL Generator using the C# reference compiler:
-- Compile the 3 parts of the ILGenerator in FFLang, renaming each output program, runtimeconfig json and IL code for later comparison:
     - `ILGenerator_CS_reference --ramBinLength=2 --debug PrepareStaticStrings.ffsrc`
     - Rename the generated files as follows:
     ```
@@ -82,8 +81,8 @@ Here are all the steps needed to achieve self-hosting using the C# path
 
 #### Step 3 - Prepare the RAM.bin environment
 - Run the following programs to populate `RAM.bin` with static strings needed by the ILGenerator:
-    - `dotnet PrepareStaticStrings_ref.dll`
-    - `dotnet PrepareStaticStrings_IL_ref.dll`
+    - `dotnet PrepareStaticStrings_fflang.dll`
+    - `dotnet PrepareStaticStrings_IL_fflang.dll`
 - Verify:
     - No runtime errors.
     - `RAM.bin` is generated successfully (expected size: 2 MB).
@@ -91,19 +90,20 @@ Here are all the steps needed to achieve self-hosting using the C# path
 #### Step 4 - Inject Source Code into RAM.bin and Extract IL Output
 - Inject the `PrepareStaticStrings.ffsrc` into `RAM.bin` at offset 512 KB.
 - Run
-    - `dotnet ILGenerator_ref.dll`
+    - `dotnet ILGenerator_fflang.dll`
 - Ensure that no errors occurred.
 - Extract the generated IL output from `RAM.bin` at offset 1 MB and save as `PrepareStaticStrings_fflang_self.il`
 - Repeat the process for `PrepareStaticStrings_IL.ffsrc` and `ILGenerator.ffsrc`.
-- Compare the extracted IL files with previously generated IL:
-```
-PrepareStaticStrings_fflang.il and PrepareStaticStrings_fflang_self.il
-PrepareStaticStrings_IL_fflang.il and PrepareStaticStrings_IL_fflang_self.il
-ILGenerator_fflang.il and ILGenerator_fflang_self.il
-```
+- Compare the extracted IL files with previously generated IL: 
+    ```
+    PrepareStaticStrings_fflang.il and PrepareStaticStrings_fflang_self.il
+    PrepareStaticStrings_IL_fflang.il and PrepareStaticStrings_IL_fflang_self.il
+    ILGenerator_fflang.il and ILGenerator_fflang_self.il
+    ```
 - A perfect match confirms successful self-hosting.
 
-
 #### Step 5 - Manually assemble IL code
-- Manually assemble the generated IL files from ILGenerator_fflang using `ilasm`:
-`ilasm <IL_file>.il /DLL`
+- To manually assemble the generated IL files from ILGenerator_fflang, use `ilasm` as:
+    ```
+    ilasm <IL_file>.il /DLL
+    ```
