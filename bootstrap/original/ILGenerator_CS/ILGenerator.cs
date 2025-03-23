@@ -395,7 +395,50 @@ internal static class ILGenerator
 
         /* set */ tmpBuff = getTmpBuffer_ptr();
 
-        //TODO: millions is enough for the context of this program address space
+        /* set */ count = 0;
+    LOOP_B:
+        if (__bool_check(_gte(v, 1000000000)))
+        {
+            /* set */ count = _add(count, 1);
+            /* set */ v = _sub(v, 1000000000);
+            goto LOOP_B;
+        }
+
+        if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
+        {
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit x_________
+            /* set */ pos = _add(pos, 1); // pos++
+        }
+
+        /* set */ count = 0;
+    LOOP_MMM:
+        if (__bool_check(_gte(v, 100000000)))
+        {
+            /* set */ count = _add(count, 1);
+            /* set */ v = _sub(v, 100000000);
+            goto LOOP_MMM;
+        }
+
+        if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
+        {
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit _x________
+            /* set */ pos = _add(pos, 1); // pos++
+        }
+
+        /* set */ count = 0;
+    LOOP_MM:
+        if (__bool_check(_gte(v, 10000000)))
+        {
+            /* set */ count = _add(count, 1);
+            /* set */ v = _sub(v, 10000000);
+            goto LOOP_MM;
+        }
+
+        if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
+        {
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit __x_______
+            /* set */ pos = _add(pos, 1); // pos++
+        }
 
         /* set */ count = 0;
     LOOP_M:
@@ -408,7 +451,7 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit x______
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ___x______
             /* set */ pos = _add(pos, 1); // pos++
         }
 
@@ -423,7 +466,7 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit _x_____
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ____x_____
             /* set */ pos = _add(pos, 1); // pos++
         }
 
@@ -438,7 +481,7 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit __x____
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit _____x____
             /* set */ pos = _add(pos, 1); // pos++
         }
 
@@ -453,7 +496,7 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ___x___
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ______x___
             /* set */ pos = _add(pos, 1); // pos++
         }
 
@@ -468,7 +511,7 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ____x__
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit _______x__
             /* set */ pos = _add(pos, 1); // pos++
         }
 
@@ -483,11 +526,11 @@ internal static class ILGenerator
 
         if (__bool_check(_or(_gt(count, 0), _gt(pos, 0))))
         {
-            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit _____x_
+            _ = memWrite8(_add(tmpBuff, pos), _add(48, count)); // digit ________x_
             /* set */ pos = _add(pos, 1); // pos++
         }
 
-        _ = memWrite8(_add(tmpBuff, pos), _add(48, v)); // digit ______x
+        _ = memWrite8(_add(tmpBuff, pos), _add(48, v)); // digit _________x
         _ = memWrite8(_add(tmpBuff, _add(pos, 1)), 0); // '\0'
 
         return tmpBuff;
@@ -2755,18 +2798,35 @@ internal static class ILGenerator
     {
         var g_offset = (int)default;
         var result = (int)default;
+        var numLen = (int)default;
 
         /* set */ g_offset = 0;
 
+        // truncates to 1024 MB limit
+        if (__bool_check(_gt(ramBinLength_MB, 1024)))
+        {
+            /* set */ ramBinLength_MB = 1024;
+        }
+        // set default to 2 MB
+        if (__bool_check(_lt(ramBinLength_MB, 1)))
+        {
+            /* set */ ramBinLength_MB = 2;
+        }
+
+        // Replace RAM.bin length and truncate line with comments
+        /* set */ numLen = strCpy(intToStr(_mul(1048576, ramBinLength_MB)), getStaticStr(149));
+        /* set */ numLen = _sub(numLen, 1);
+        _ = memWrite8(_add(getStaticStr(149), numLen), 32); // ' '
+        _ = memWrite8(_add(getStaticStr(149), _add(numLen, 1)), 47); // '/'
+        _ = memWrite8(_add(getStaticStr(149), _add(numLen, 2)), 47); // '/'
+
         // Clean s_IL_Emitter_strBuffer - 1 MB length
-        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, 1048576);
+        _ = memSet(IL_Emitter_getStrBuffer_ptr(), 0, _sub(1048576, 4)); // less 4 bytes, to prevent unaligned writes
         _ = memWrite(_add(g_offset, 284), 0); // s_IL_Emitter_strBuffer_pos = 0
 
         /* set */ result = IL_Emitter_appendTxt(IL_Emitter_getBaseILBeginTxt_ptr());
         /* set */ result = _and(result, IL_Emitter_appendChar(13)); // '\r'
         /* set */ result = _and(result, IL_Emitter_appendChar(10)); // '\n'
-
-        //TODO: set custom ramBinLength size
 
         return result;
     }

@@ -5308,6 +5308,9 @@ internal static class PrepareStaticStrings_IL
         _ = wc(32);  // ' '
         _ = wc(32);  // ' '
         _ = wc(32);  // ' '
+        // RAM.bin len offset
+        _ = updateStrTbl();
+        // ------------------
         _ = wc(50);  // '2'
         _ = wc(48);  // '0'
         _ = wc(57);  // '9'
@@ -5316,13 +5319,16 @@ internal static class PrepareStaticStrings_IL
         _ = wc(53);  // '5'
         _ = wc(50);  // '2'
         _ = wc(32);  // ' '
-        _ = wc(47);  // '/'
-        _ = wc(47);  // '/'
         _ = wc(32);  // ' '
-        _ = wc(50);  // '2'
         _ = wc(32);  // ' '
-        _ = wc(77);  // 'M'
-        _ = wc(66);  // 'B'
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
+        _ = wc(32);  // ' '
         _ = wc(10);  // '\n'
         _ = wc(32);  // ' '
         _ = wc(32);  // ' '
@@ -8811,6 +8817,8 @@ internal static class PrepareStaticStrings_IL
         _ = writeIL_inst_loadLocalVar(); // ID 146
         _ = writeIL_inst_storeArgVar(); // ID 147
         _ = writeIL_inst_storeLocalVar(); // ID 148
+
+        // NOTE: ID 149 is the RAM.bin len offset for override value
 
         _ = writeIL_BaseILBeginTxt(_add(g_offset, 499712));
         _ = writeIL_BaseILEndTxt(_add(g_offset, 509952));

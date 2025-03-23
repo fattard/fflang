@@ -55,7 +55,8 @@ static class Program
             }
         }
 
-        s_RAM = new byte[ramBinLength_MB * 1024 * 1024];
+        var ramLen = ramBinLength_MB > 1 ? ramBinLength_MB : 2;
+        s_RAM = new byte[ramLen * 1024 * 1024];
         string ramDataFile = "RAM.bin";
 
         BinaryPrimitives.WriteInt32LittleEndian(s_RAM.AsSpan(64), ramBinLength_MB);
