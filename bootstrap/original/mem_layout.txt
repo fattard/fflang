@@ -6,8 +6,8 @@ symbol identifiers arena            = g_offset + 102400 (max len: 388 KB)
 IL base texts                       = g_offset + 499712 (max len: 12 KB)
 Static Strings                      = g_offset + 512000 (max len: 12 KB)
 
-FFLang source code input            = g_offset + 524288 (max len: 144 KB)
-IL generated source code output     = g_offset + 1048576 (max len: 352 KB)
+FFLang source code input            = g_offset + 524288 (max len: 512 KB)
+IL generated source code output     = g_offset + 1048576 (max len: 1 MB)
 
 
 
